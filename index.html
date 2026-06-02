@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <meta name="theme-color" content="#7F77DD" />
+  <title>PlayingwithFriend</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- ══ Excel 리본 (테마=excel 일 때만 표시) ══ -->
+<div class="excel-ribbon" id="excelRibbon" aria-hidden="true">
+  <div class="ribbon-tabs">
+    <button class="ribbon-tab active">파일</button>
+    <button class="ribbon-tab">홈</button>
+    <button class="ribbon-tab">삽입</button>
+    <button class="ribbon-tab">페이지 레이아웃</button>
+    <button class="ribbon-tab">수식</button>
+    <button class="ribbon-tab">데이터</button>
+    <button class="ribbon-tab">검토</button>
+  </div>
+  <div class="ribbon-bar">
+    <div class="ribbon-group">
+      <button class="ribbon-btn-xl"><span class="ribbon-icon">🎮</span>게임입장</button>
+    </div>
+    <div class="ribbon-group">
+      <button class="ribbon-btn-xl"><span class="ribbon-icon">🏠</span>방만들기</button>
+    </div>
+    <div class="ribbon-group">
+      <button class="ribbon-btn-xl" onclick="cycleTheme()"><span class="ribbon-icon">🎨</span>테마변경</button>
+    </div>
+  </div>
+</div>
+
+<!-- 수식 입력줄 -->
+<div class="formula-bar" id="formulaBar">
+  <div class="formula-cell-ref" id="cellRef">A1</div>
+  <div class="formula-eq">fx</div>
+  <div class="formula-content" id="formulaContent">=VLOOKUP(닉네임, 게임목록, 2, FALSE)</div>
+</div>
+
+<!-- ══ 화면 1: 닉네임 입력 ══ -->
+<div class="screen active" id="screenNickname">
+  <header class="top-bar">
+    <span class="logo">PlayingwithFriend</span>
+    <button class="theme-btn" onclick="cycleTheme()" title="테마 전환">🎨 테마</button>
+  </header>
+  <main class="content">
+    <div class="nickname-wrap">
+      <div>
+        <h1 class="site-title">PlayingwithFriend</h1>
+        <p class="site-subtitle" style="margin-top:8px">친구와 함께 보드게임을 즐겨보세요</p>
+      </div>
+      <div class="input-group">
+        <input
+          class="input-field"
+          id="nicknameInput"
+          type="text"
+          placeholder="닉네임을 입력하세요"
+          maxlength="12"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <button class="btn-primary" onclick="enterLobby()">입장하기</button>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ══ 화면 2: 게임 목록 ══ -->
+<div class="screen" id="screenLobby">
+  <header class="top-bar">
+    <span class="logo">PlayingwithFriend</span>
+    <button class="theme-btn" onclick="cycleTheme()">🎨 테마</button>
+  </header>
+  <main class="content">
+    <!-- 엑셀 테마 전용 그리드 -->
+    <table class="excel-grid" id="excelGrid" aria-label="게임 목록 스프레드시트">
+      <thead>
+        <tr>
+          <th></th>
+          <th class="col-header">A</th>
+          <th class="col-header">B</th>
+          <th class="col-header">C</th>
+          <th class="col-header">D</th>
+        </tr>
+      </thead>
+      <tbody id="excelGridBody"></tbody>
+    </table>
+
+    <!-- 일반 테마 콘텐츠 -->
+    <div class="normal-content" style="width:100%">
+      <div class="greeting-bar">
+        <span class="greeting-text" id="greetingText">안녕하세요!</span>
+        <button class="btn-sm" onclick="changeNickname()">닉네임 변경</button>
+      </div>
+      <p class="section-label">게임 선택</p>
+      <div class="game-list" id="gameList"></div>
+    </div>
+  </main>
+</div>
+
+<!-- ══ 화면 3: 방 입장 ══ -->
+<div class="screen" id="screenRoom">
+  <header class="top-bar">
+    <span class="logo">PlayingwithFriend</span>
+    <button class="theme-btn" onclick="cycleTheme()">🎨 테마</button>
+  </header>
+  <main class="content">
+    <button class="back-btn" onclick="showLobby()">← 뒤로</button>
+    <h2 class="room-title" id="roomTitle">게임 이름</h2>
+
+    <!-- 방 만들기 -->
+    <div class="room-section">
+      <p class="room-section-title">방 만들기</p>
+      <div class="player-selector" id="playerSelector"></div>
+      <button class="btn-primary" onclick="createRoom()">방 만들기</button>
+      <div class="room-code-display" id="roomCodeDisplay">
+        <span class="room-code-label">방 코드</span>
+        <span class="room-code-value" id="roomCodeValue">----</span>
+        <span class="room-code-hint">이 코드를 친구에게 알려주세요</span>
+      </div>
+    </div>
+
+    <div class="divider">또는</div>
+
+    <!-- 방 입장 -->
+    <div class="room-section" style="margin-top:16px">
+      <p class="room-section-title">방 코드로 입장</p>
+      <div class="code-input-row">
+        <input
+          class="code-input"
+          id="roomCodeInput"
+          type="text"
+          placeholder="XXXX"
+          maxlength="4"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <button class="btn-join" onclick="joinRoom()">입장하기</button>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- 시트 탭 (Excel 테마) -->
+<div class="sheet-tabs" id="sheetTabs" aria-hidden="true">
+  <div class="sheet-tab active" onclick="excelSheetClick('게임목록')">게임목록</div>
+  <div class="sheet-tab" onclick="excelSheetClick('방정보')">방정보</div>
+  <div class="sheet-tab" onclick="excelSheetClick('정산')">정산</div>
+</div>
+
+<!-- 토스트 메시지 -->
+<div class="toast" id="toast"></div>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>
