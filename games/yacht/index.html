@@ -2,415 +2,330 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🛥️ YACHT — PlayingwithFriend</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0d0d0f">
+<title>요트 주사위 — PlayingwithFriend</title>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: 'Segoe UI', sans-serif;
-    background: linear-gradient(160deg, #0a1628, #1a3a5c, #0d2540);
-    min-height: 100vh;
-    color: #fff;
-  }
+/* ── 게임 전용 스타일 (룸 공통 CSS는 JS에서 주입) ── */
 
-  /* 뒤로가기 */
-  .back-nav {
-    position: fixed; top: 0; left: 0; right: 0;
-    padding: 10px 16px; z-index: 300;
-    display: flex; align-items: center;
-  }
-  .back-nav-btn {
-    background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
-    border-radius: 8px; color: rgba(255,255,255,0.8);
-    font-size: 13px; padding: 6px 12px; cursor: pointer;
-    display: flex; align-items: center; gap: 5px;
-    transition: background .2s;
-  }
-  .back-nav-btn:hover { background: rgba(255,255,255,0.18); }
+/* 제목 */
+h1 { font-family:'Bebas Neue',sans-serif; font-size:clamp(26px,6vw,42px);
+  letter-spacing:6px; color:#fff; text-align:center; margin-bottom:2px; }
+.subtitle { font-size:10px; color:var(--muted); letter-spacing:3px;
+  text-transform:uppercase; margin-bottom:16px; }
 
-  /* ── SCREENS ── */
-  .screen { display: none; }
-  .screen.active { display: flex; }
+/* ── 게임 화면 ── */
+#gameScreen { max-width:560px; }
 
-  /* ── SETUP ── */
-  #setup-screen {
-    min-height: 100vh;
-    align-items: center;
-    justify-content: center;
-    padding: 60px 20px 20px;
-  }
-  .setup-card {
-    background: rgba(255,255,255,0.07);
-    backdrop-filter: blur(20px);
-    border: 1px solid rgba(255,255,255,0.15);
-    border-radius: 24px;
-    padding: 36px 32px;
-    width: 100%;
-    max-width: 420px;
-    box-shadow: 0 30px 80px #0008;
-    text-align: center;
-  }
-  .setup-title { font-size: 48px; margin-bottom: 6px; }
-  .setup-h1 { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 4px; }
-  .setup-sub { color: rgba(255,255,255,0.45); font-size: 13px; margin-bottom: 6px; }
-  .setup-code {
-    display: inline-block; background: rgba(255,255,255,0.08);
-    border: 1px dashed rgba(255,255,255,0.3); border-radius: 10px;
-    padding: 4px 16px; font-size: 20px; font-weight: 800;
-    letter-spacing: 5px; color: #64b5f6; margin-bottom: 24px;
-  }
-  .player-row {
-    display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
-  }
-  .player-num {
-    width: 32px; height: 32px; border-radius: 8px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 14px; font-weight: 700; flex-shrink: 0; color: #fff;
-  }
-  .player-input {
-    flex: 1; padding: 9px 14px; border-radius: 10px;
-    background: rgba(255,255,255,0.08); color: #fff;
-    font-size: 14px; outline: none; border: 1.5px solid #ffffff33;
-    transition: border-color .2s;
-  }
-  .player-input:focus { border-color: #64b5f6; }
-  .player-input::placeholder { color: rgba(255,255,255,0.3); }
-  .btn-start {
-    width: 100%; padding: 14px 0; border-radius: 13px; border: none;
-    background: linear-gradient(135deg, #2196f3, #1565c0);
-    color: #fff; font-size: 16px; font-weight: 700; cursor: pointer;
-    box-shadow: 0 4px 24px #2196f355; margin-top: 8px;
-    transition: transform .15s;
-  }
-  .btn-start:hover { transform: translateY(-2px); }
+/* 플레이어 카드 행 */
+.pcard-row { display:flex; gap:6px; width:100%; margin-bottom:8px; flex-wrap:wrap; }
+.pcard {
+  background:var(--surface); border-radius:10px; padding:8px 10px;
+  border:2px solid transparent; transition:all .2s; position:relative;
+  overflow:hidden; flex:1; min-width:80px;
+}
+.pcard::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:3px; border-radius:2px 2px 0 0;
+}
+.pcard.p0::before{background:#e8c547} .pcard.p1::before{background:#e84747}
+.pcard.p2::before{background:#47b8e8} .pcard.p3::before{background:#47e888}
+.pcard.p4::before{background:#ff9800} .pcard.p5::before{background:#9c27b0}
+.pcard.p6::before{background:#00bcd4} .pcard.p7::before{background:#4caf50}
+.pcard.active { transform:translateY(-2px); }
+.pcard.p0.active{border-color:#e8c547;box-shadow:0 3px 14px #e8c54728}
+.pcard.p1.active{border-color:#e84747;box-shadow:0 3px 14px #e8474728}
+.pcard.p2.active{border-color:#47b8e8;box-shadow:0 3px 14px #47b8e828}
+.pcard.p3.active{border-color:#47e888;box-shadow:0 3px 14px #47e88828}
+.pcard.p4.active{border-color:#ff9800;box-shadow:0 3px 14px #ff980028}
+.pcard.p5.active{border-color:#9c27b0;box-shadow:0 3px 14px #9c27b028}
+.pcard.p6.active{border-color:#00bcd4;box-shadow:0 3px 14px #00bcd428}
+.pcard.p7.active{border-color:#4caf50;box-shadow:0 3px 14px #4caf5028}
+.pcard-name { font-size:10px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.pcard-score { font-size:16px; font-weight:900; line-height:1.2; }
+.pcard-sub { font-size:9px; color:var(--muted); margin-top:1px; }
+.pcard.active .pcard-sub { color:#fff; }
 
-  /* ── TRANSITION ── */
-  #transition-screen {
-    position: fixed; inset: 0; z-index: 200;
-    background: linear-gradient(160deg, #0a1628, #1a3a5c);
-    flex-direction: column; align-items: center; justify-content: center;
-    text-align: center;
-  }
-  .trans-avatar {
-    width: 80px; height: 80px; border-radius: 20px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 32px; font-weight: 800;
-    margin: 0 auto 20px; color: #fff;
-  }
-  .trans-round { font-size: 13px; color: rgba(255,255,255,0.45); margin-bottom: 6px; }
-  .trans-name { font-size: 28px; font-weight: 800; margin-bottom: 8px; }
-  .trans-sub { color: rgba(255,255,255,0.5); font-size: 14px; margin-bottom: 32px; }
-  .btn-ready {
-    padding: 14px 40px; border-radius: 13px; border: none;
-    color: #fff; font-size: 16px; font-weight: 700; cursor: pointer;
-  }
+/* 주사위 영역 */
+.dice-area {
+  width:100%; max-width:560px;
+  background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12);
+  border-radius:20px; padding:18px 14px; margin-bottom:14px;
+}
+.dice-row {
+  display:flex; justify-content:center; gap:8px; flex-wrap:wrap; margin-bottom:14px;
+}
+.die {
+  width:60px; height:60px; border-radius:13px;
+  position:relative; flex-shrink:0; cursor:pointer;
+  transition:all .15s; border:2px solid #bbb;
+  background:linear-gradient(135deg,#fff,#e8e8e8);
+  box-shadow:0 3px 10px #0003; user-select:none;
+}
+.die.held { border-width:3px; transform:translateY(-4px) scale(1.06) !important; }
+.die.rolling { animation:shake .12s infinite; transform:scale(.88); }
+.die.locked { opacity:.5; cursor:not-allowed; }
+.die svg { position:absolute; inset:0; pointer-events:none; }
+@keyframes shake { 0%,100%{transform:rotate(-8deg) scale(.88)} 50%{transform:rotate(8deg) scale(.88)} }
 
-  /* ── GAME ── */
-  #game-screen {
-    flex-direction: column; align-items: center;
-    min-height: 100vh; padding: 60px 12px 48px;
-  }
-  .game-header {
-    width: 100%; max-width: 720px;
-    display: flex; justify-content: space-between; align-items: center;
-    margin-bottom: 12px;
-  }
-  .header-left { display: flex; align-items: center; gap: 10px; }
-  .cur-avatar {
-    width: 38px; height: 38px; border-radius: 10px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 16px; font-weight: 800; color: #fff;
-  }
-  .cur-name { font-weight: 700; font-size: 16px; line-height: 1; }
-  .cur-round { font-size: 12px; color: rgba(255,255,255,0.45); }
-  .header-right { display: flex; gap: 8px; align-items: center; }
-  .mini-player { text-align: center; transition: opacity 0.2s; }
-  .mini-player.inactive { opacity: 0.4; }
-  .mini-avatar {
-    width: 28px; height: 28px; border-radius: 7px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 12px; font-weight: 700; margin: 0 auto 2px; color: #fff;
-  }
-  .mini-score { font-size: 10px; color: rgba(255,255,255,0.6); }
-  .btn-scoreboard {
-    padding: 6px 10px; border-radius: 8px;
-    border: 1px solid rgba(255,255,255,0.2);
-    background: rgba(255,255,255,0.08); color: #fff;
-    font-size: 11px; cursor: pointer;
-  }
-  .progress-bar-wrap {
-    width: 100%; max-width: 720px;
-    height: 5px; background: rgba(255,255,255,0.1);
-    border-radius: 3px; overflow: hidden; margin-bottom: 14px;
-  }
-  .progress-bar-fill {
-    height: 100%; border-radius: 3px; transition: width 0.5s;
-  }
-  .dice-area {
-    width: 100%; max-width: 720px;
-    background: rgba(255,255,255,0.06);
-    border: 1px solid rgba(255,255,255,0.12);
-    border-radius: 20px; padding: 18px 14px; margin-bottom: 14px;
-  }
-  .dice-row {
-    display: flex; justify-content: center; gap: 8px;
-    flex-wrap: wrap; margin-bottom: 14px;
-  }
-  .die {
-    width: 64px; height: 64px; border-radius: 13px;
-    position: relative; flex-shrink: 0; cursor: pointer;
-    transition: all 0.15s; border: 2px solid #bbb;
-    background: linear-gradient(135deg, #fff, #e8e8e8);
-    box-shadow: 0 3px 10px #0003;
-  }
-  .die.held {
-    border-width: 3px;
-    transform: translateY(-4px) scale(1.06) !important;
-  }
-  .die.rolling { animation: shake 0.12s infinite; transform: scale(0.88); }
-  .die svg { position: absolute; inset: 0; pointer-events: none; }
-  .dice-controls {
-    display: flex; gap: 10px; justify-content: center;
-    align-items: center; flex-wrap: wrap;
-  }
-  .btn-roll {
-    padding: 11px 28px; border-radius: 11px; border: none;
-    color: #fff; font-size: 14px; font-weight: 700; cursor: pointer;
-    transition: all 0.2s;
-  }
-  .btn-roll:disabled { background: rgba(255,255,255,0.1) !important; color: rgba(255,255,255,0.3); cursor: not-allowed; box-shadow: none !important; }
-  .dice-hint { font-size: 12px; color: rgba(255,255,255,0.35); }
+/* 잠금 오버레이 */
+.dice-area.locked-area { position:relative; }
+.not-turn-overlay {
+  display:none; position:absolute; inset:0; border-radius:18px;
+  background:#00000030; z-index:5; align-items:center; justify-content:center;
+  font-size:12px; color:var(--muted); backdrop-filter:blur(1px);
+}
+.dice-area.locked-area .not-turn-overlay { display:flex; }
 
-  .score-grid {
-    width: 100%; max-width: 720px;
-    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
-    margin-bottom: 12px;
-  }
-  .sec-box {
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 16px; padding: 12px 10px;
-  }
-  .sec-title {
-    font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.35);
-    text-transform: uppercase; letter-spacing: 0.1em;
-    margin-bottom: 8px; padding: 0 2px;
-  }
-  .cat-row {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 6px 8px; border-radius: 8px; margin-bottom: 3px;
-    border: 1px solid transparent; cursor: default; transition: all 0.13s;
-  }
-  .cat-row.available { cursor: pointer; }
-  .cat-row.scored-zero { opacity: 0.35; }
-  .cat-label { font-size: 12px; color: rgba(255,255,255,0.85); user-select: none; }
-  .cat-score { font-size: 13px; font-weight: 700; min-width: 30px; text-align: right; }
-  .sub-row {
-    display: flex; justify-content: space-between;
-    padding: 8px 8px 6px; font-size: 12px;
-    color: rgba(255,255,255,0.5);
-    border-top: 1px solid rgba(255,255,255,0.07); margin-top: 4px;
-  }
-  .total-bar {
-    width: 100%; max-width: 720px;
-    border-radius: 14px; padding: 12px 18px;
-    display: flex; justify-content: space-between; align-items: center;
-  }
-  .total-label { font-size: 15px; font-weight: 700; }
-  .total-score { font-size: 26px; font-weight: 800; color: #ffd54f; }
+.dice-controls { display:flex; gap:10px; justify-content:center; align-items:center; flex-wrap:wrap; }
+.btn-roll {
+  padding:11px 28px; border-radius:11px; border:none;
+  color:#fff; font-size:14px; font-weight:700; cursor:pointer;
+  font-family:'Noto Sans KR',sans-serif; transition:all .2s;
+}
+.btn-roll:disabled { background:rgba(255,255,255,.1)!important; color:rgba(255,255,255,.3); cursor:not-allowed; box-shadow:none!important; }
+.dice-hint { font-size:12px; color:rgba(255,255,255,.35); }
 
-  /* ── SCOREBOARD MODAL ── */
-  .modal-overlay {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.75);
-    z-index: 100; display: flex; align-items: center;
-    justify-content: center; padding: 16px;
-  }
-  .modal-box {
-    background: #0f2540; border: 1px solid rgba(255,255,255,0.15);
-    border-radius: 20px; padding: 20px;
-    width: 100%; max-width: 600px; max-height: 85vh; overflow-y: auto;
-  }
-  .modal-box table { width: 100%; border-collapse: collapse; font-size: 12px; }
-  .modal-box th {
-    padding: 6px 8px; border-bottom: 1px solid rgba(255,255,255,0.15);
-    color: rgba(255,255,255,0.6); font-weight: 600;
-  }
-  .modal-box td {
-    padding: 5px 8px; border-bottom: 1px solid rgba(255,255,255,0.06);
-    color: rgba(255,255,255,0.8); text-align: center;
-  }
-  .modal-box td:first-child { text-align: left; }
-  .btn-close {
-    margin-top: 16px; width: 100%; padding: 10px 0; border-radius: 10px;
-    border: 1px solid rgba(255,255,255,0.2);
-    background: rgba(255,255,255,0.08); color: #fff;
-    font-size: 13px; cursor: pointer;
-  }
+/* 점수 탭 */
+.score-tabs { display:flex; gap:4px; width:100%; max-width:560px; margin-bottom:10px; flex-wrap:wrap; }
+.score-tab {
+  padding:5px 12px; border-radius:20px; border:1.5px solid var(--border);
+  background:transparent; color:var(--muted); font-family:'Noto Sans KR',sans-serif;
+  font-size:11px; font-weight:700; cursor:pointer; transition:all .2s; white-space:nowrap;
+}
+.score-tab.active { border-color:var(--accent); background:rgba(85,85,255,.15); color:#fff; }
 
-  /* ── RESULT ── */
-  #result-screen {
-    flex-direction: column; align-items: center; justify-content: center;
-    min-height: 100vh; padding: 24px 16px;
-  }
-  .result-trophy { font-size: 48px; margin-bottom: 8px; }
-  .result-h1 { font-size: 26px; font-weight: 800; margin-bottom: 4px; }
-  .result-sub { color: rgba(255,255,255,0.4); font-size: 13px; margin-bottom: 28px; }
-  .result-list { width: 100%; max-width: 400px; margin-bottom: 24px; }
-  .result-row {
-    display: flex; align-items: center; gap: 12px;
-    border-radius: 14px; padding: 14px 18px; margin-bottom: 10px;
-    border: 1px solid rgba(255,255,255,0.08);
-    background: rgba(255,255,255,0.05);
-  }
-  .result-medal { font-size: 24px; min-width: 32px; }
-  .result-avatar {
-    width: 36px; height: 36px; border-radius: 9px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 14px; font-weight: 800; color: #fff;
-  }
-  .result-info { flex: 1; }
-  .result-name { font-weight: 700; font-size: 15px; }
-  .result-detail { font-size: 11px; color: rgba(255,255,255,0.4); }
-  .result-pts { font-size: 20px; font-weight: 800; color: rgba(255,255,255,0.7); }
-  .result-pts.first { font-size: 26px; color: #ffd54f; }
-  .btn-home {
-    padding: 14px 40px; border-radius: 13px; border: none;
-    background: linear-gradient(135deg, #2196f3, #1565c0);
-    color: #fff; font-size: 16px; font-weight: 700; cursor: pointer;
-    box-shadow: 0 4px 24px #2196f355;
-  }
+/* 점수 그리드 */
+.score-grid {
+  width:100%; max-width:560px;
+  display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;
+}
+.sec-box {
+  background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1);
+  border-radius:16px; padding:12px 10px;
+}
+.sec-title {
+  font-size:10px; font-weight:700; color:rgba(255,255,255,.35);
+  text-transform:uppercase; letter-spacing:.1em;
+  margin-bottom:8px; padding:0 2px;
+}
+.cat-row {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:6px 8px; border-radius:8px; margin-bottom:3px;
+  border:1px solid transparent; cursor:default; transition:all .13s;
+}
+.cat-row.available { cursor:pointer; }
+.cat-row.scored-zero { opacity:.35; }
+.cat-label { font-size:12px; color:rgba(255,255,255,.85); user-select:none; }
+.cat-score { font-size:13px; font-weight:700; min-width:30px; text-align:right; }
+.sub-row {
+  display:flex; justify-content:space-between;
+  padding:8px 8px 6px; font-size:12px; color:rgba(255,255,255,.5);
+  border-top:1px solid rgba(255,255,255,.07); margin-top:4px;
+}
+.total-bar {
+  width:100%; max-width:560px; border-radius:14px; padding:12px 18px;
+  display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;
+}
+.total-label { font-size:14px; font-weight:700; }
+.total-score { font-size:24px; font-weight:800; color:#ffd54f; }
 
-  @keyframes shake {
-    0%,100% { transform: rotate(-8deg) scale(0.88); }
-    50%      { transform: rotate(8deg) scale(0.88); }
-  }
+/* 점수판 모달 */
+.modal-overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,.75);
+  z-index:100; display:flex; align-items:center; justify-content:center; padding:16px;
+}
+.modal-box {
+  background:#0f1a2e; border:1px solid rgba(255,255,255,.15);
+  border-radius:20px; padding:20px;
+  width:100%; max-width:600px; max-height:85vh; overflow-y:auto;
+}
+.modal-box table { width:100%; border-collapse:collapse; font-size:12px; }
+.modal-box th { padding:6px 8px; border-bottom:1px solid rgba(255,255,255,.15); color:rgba(255,255,255,.6); }
+.modal-box td { padding:5px 8px; border-bottom:1px solid rgba(255,255,255,.06); color:rgba(255,255,255,.8); text-align:center; }
+.modal-box td:first-child { text-align:left; }
+.btn-close {
+  margin-top:16px; width:100%; padding:10px 0; border-radius:10px;
+  border:1px solid rgba(255,255,255,.2); background:rgba(255,255,255,.08);
+  color:#fff; font-size:13px; cursor:pointer; font-family:'Noto Sans KR',sans-serif;
+}
+
+/* 헤더 */
+.game-header {
+  width:100%; max-width:560px;
+  display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;
+}
+.header-left { display:flex; align-items:center; gap:10px; }
+.cur-avatar { width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:800; color:#fff; }
+.cur-name { font-weight:700; font-size:15px; line-height:1; }
+.cur-round { font-size:11px; color:rgba(255,255,255,.45); }
+.btn-sb { padding:6px 10px; border-radius:8px; border:1px solid rgba(255,255,255,.2); background:rgba(255,255,255,.08); color:#fff; font-size:11px; cursor:pointer; font-family:'Noto Sans KR',sans-serif; }
+
+.progress-bar-wrap { width:100%; max-width:560px; height:5px; background:rgba(255,255,255,.1); border-radius:3px; overflow:hidden; margin-bottom:14px; }
+.progress-bar-fill { height:100%; border-radius:3px; transition:width .5s; }
+
+.status-bar { margin-top:4px; font-size:12px; color:var(--muted); text-align:center; min-height:16px; }
+.my-turn-alert { color:var(--green)!important; font-weight:700; }
+
+.game-controls { display:flex; gap:8px; margin-top:8px; }
+.gcbtn { padding:8px 18px; border-radius:20px; border:2px solid var(--border); background:var(--surface); color:var(--muted); font-family:'Noto Sans KR',sans-serif; font-size:12px; font-weight:700; cursor:pointer; transition:all .2s; }
+.gcbtn:hover { color:var(--text); border-color:var(--muted); }
 </style>
 </head>
 <body>
 
-<!-- 뒤로가기 항상 표시 -->
 <div class="back-nav">
-  <button class="back-nav-btn" onclick="goHome()">← 게임 목록</button>
+  <button class="back-nav-btn" id="backBtn">← 게임 목록</button>
 </div>
 
-<!-- ══ SETUP SCREEN ══════════════════════════════════════════════════════════ -->
-<div id="setup-screen" class="screen active">
-  <div class="setup-card">
-    <div class="setup-title">🛥️</div>
-    <h1 class="setup-h1">YACHT</h1>
-    <p class="setup-sub">주사위 게임 · 로컬 멀티플레이</p>
-    <div class="setup-code" id="setup-code-display">----</div>
-    <div id="player-list"></div>
-    <button class="btn-start" id="btn-start">게임 시작 🎲</button>
-  </div>
+<h1>YACHT</h1>
+<p class="subtitle">요트 주사위 · 온라인 멀티플레이</p>
+
+<!-- ── 로딩 ── -->
+<div class="loading-screen" id="loadingScreen">
+  <div class="spinner"></div>
+  <span>방에 연결하는 중...</span>
 </div>
 
-<!-- ══ TURN TRANSITION ════════════════════════════════════════════════════════ -->
-<div id="transition-screen" class="screen">
-  <div class="trans-avatar" id="trans-avatar"></div>
-  <div class="trans-round" id="trans-round"></div>
-  <div class="trans-name" id="trans-name"></div>
-  <div class="trans-sub">기기를 넘겨주세요</div>
-  <button class="btn-ready" id="btn-ready">준비 완료 🎲</button>
-</div>
-
-<!-- ══ SCOREBOARD MODAL ════════════════════════════════════════════════════════ -->
-<div class="modal-overlay" id="scoreboard-modal" style="display:none;">
-  <div class="modal-box">
-    <h3 style="margin:0 0 16px;font-size:16px;">📊 현재 점수판</h3>
-    <div style="overflow-x:auto;">
-      <table id="scoreboard-table"></table>
+<!-- ── 대기실 ── -->
+<div class="screen" id="waitScreen">
+  <div class="card">
+    <h2>🕐 대기실 — <span id="waitMode"></span></h2>
+    <div class="room-code-box">
+      <div class="room-code" id="waitCode">----</div>
+      <div class="room-code-hint">이 코드를 친구에게 공유하세요</div>
     </div>
-    <button class="btn-close" id="btn-close-modal">닫기</button>
+    <div class="waiting-list" id="waitingList"></div>
+    <button class="btn-full primary" id="startBtn" disabled>게임 시작</button>
+    <button class="btn-full secondary" id="leaveBtn">나가기</button>
   </div>
 </div>
 
-<!-- ══ GAME SCREEN ═══════════════════════════════════════════════════════════ -->
-<div id="game-screen" class="screen">
+<!-- ── 게임 ── -->
+<div class="screen" id="gameScreen">
+  <div class="conn-badge">
+    <div class="conn-dot" id="connDot"></div>
+    <span id="connLabel">연결됨</span>
+    <span style="margin-left:8px;opacity:.5">방 코드: <b id="gameCode"></b></span>
+  </div>
+
   <div class="game-header">
     <div class="header-left">
-      <div class="cur-avatar" id="cur-avatar"></div>
+      <div class="cur-avatar" id="curAvatar"></div>
       <div>
-        <div class="cur-name" id="cur-name"></div>
-        <div class="cur-round" id="cur-round"></div>
+        <div class="cur-name" id="curName">-</div>
+        <div class="cur-round" id="curRound">라운드 1/12</div>
       </div>
     </div>
-    <div class="header-right" id="header-right">
-      <button class="btn-scoreboard" id="btn-open-scoreboard">점수판</button>
-    </div>
+    <button class="btn-sb" id="btnScoreboard">📊 점수판</button>
   </div>
 
   <div class="progress-bar-wrap">
-    <div class="progress-bar-fill" id="progress-fill"></div>
+    <div class="progress-bar-fill" id="progressFill"></div>
   </div>
 
-  <div class="dice-area">
-    <div class="dice-row" id="dice-row"></div>
+  <!-- 플레이어 카드 -->
+  <div class="pcard-row" id="pcardRow"></div>
+
+  <!-- 주사위 -->
+  <div class="dice-area" id="diceArea">
+    <div class="not-turn-overlay" id="notTurnOverlay"></div>
+    <div class="dice-row" id="diceRow"></div>
     <div class="dice-controls">
-      <button class="btn-roll" id="btn-roll">🎲 굴리기 (3회 남음)</button>
-      <span class="dice-hint" id="dice-hint">굴려서 시작</span>
+      <button class="btn-roll" id="btnRoll">🎲 굴리기 (3회 남음)</button>
+      <span class="dice-hint" id="diceHint">굴려서 시작</span>
     </div>
   </div>
 
+  <!-- 점수 탭 -->
+  <div class="score-tabs" id="scoreTabs"></div>
+
+  <!-- 점수 그리드 -->
   <div class="score-grid">
     <div class="sec-box">
       <div class="sec-title">상단</div>
-      <div id="upper-cats"></div>
-      <div class="sub-row">
-        <span>소계</span>
-        <span id="upper-total-display">0/63</span>
-      </div>
-      <div class="sub-row" id="bonus-row">
-        <span>보너스</span>
-        <span id="bonus-display">잔여: 63</span>
-      </div>
+      <div id="upperCats"></div>
+      <div class="sub-row"><span>소계</span><span id="upperTotalDisplay">0/63</span></div>
+      <div class="sub-row" id="bonusRow"><span>보너스</span><span id="bonusDisplay">잔여: 63</span></div>
     </div>
     <div class="sec-box">
       <div class="sec-title">하단</div>
-      <div id="lower-cats"></div>
+      <div id="lowerCats"></div>
     </div>
   </div>
 
-  <div class="total-bar" id="total-bar">
-    <span class="total-label" id="total-label"></span>
-    <span class="total-score" id="total-score">0점</span>
+  <div class="total-bar" id="totalBar">
+    <span class="total-label" id="totalLabel">현재 점수</span>
+    <span class="total-score" id="totalScore">0점</span>
+  </div>
+
+  <div class="status-bar" id="statusBar"></div>
+  <div class="game-controls">
+    <button class="gcbtn" id="leaveGameBtn">← 로비</button>
   </div>
 </div>
 
-<!-- ══ RESULT SCREEN ══════════════════════════════════════════════════════════ -->
-<div id="result-screen" class="screen">
-  <div class="result-trophy">🏆</div>
-  <h1 class="result-h1">게임 종료!</h1>
-  <p class="result-sub">최종 결과</p>
-  <div class="result-list" id="result-list"></div>
-  <button class="btn-home" onclick="goHome()">게임 목록으로 🏠</button>
+<!-- ── 결과 오버레이 ── -->
+<div class="overlay" id="overlay">
+  <div class="result-card">
+    <div class="result-title">최종 순위</div>
+    <div id="resultRows"></div>
+    <br>
+    <button class="btn-full primary" id="backFromResult">게임 목록으로</button>
+  </div>
 </div>
 
-<script>
-// ══════════════════════════════════════════════════════════════════════════════
+<!-- ── 점수판 모달 ── -->
+<div class="modal-overlay" id="scoreboardModal" style="display:none">
+  <div class="modal-box">
+    <h3 style="margin:0 0 14px;font-size:15px">📊 현재 점수판</h3>
+    <div style="overflow-x:auto"><table id="scoreboardTable"></table></div>
+    <button class="btn-close" id="closeModal">닫기</button>
+  </div>
+</div>
+
+<!-- 토스트 -->
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import {
+  PLAYER_COLORS, RANK_EMOJIS, RANK_COLORS,
+  FIREBASE_CONFIG, injectRoomCSS,
+  showToast, showScreen,
+  renderWaitingSlots, updateStartButton,
+  parseRoomParams, getMyNick, genUserId,
+} from '../shared/room-ui.js';
+
+import { initializeApp }  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import {
+  getDatabase, ref, set, get, update, onValue, serverTimestamp,
+} from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+
+// CSS 주입
+injectRoomCSS();
+
+// Firebase
+const app = initializeApp(FIREBASE_CONFIG);
+const db  = getDatabase(app);
+
+// ══════════════════════════════════════════════════════════
 //  CONSTANTS
-// ══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
 const CATEGORIES = [
-  { id:"ones",          label:"Ones",           sub:"1의 합",          section:"upper" },
-  { id:"twos",          label:"Twos",           sub:"2의 합",          section:"upper" },
-  { id:"threes",        label:"Threes",         sub:"3의 합",          section:"upper" },
-  { id:"fours",         label:"Fours",          sub:"4의 합",          section:"upper" },
-  { id:"fives",         label:"Fives",          sub:"5의 합",          section:"upper" },
-  { id:"sixes",         label:"Sixes",          sub:"6의 합",          section:"upper" },
-  { id:"fourOfKind",    label:"Four of a Kind", sub:"같은 수 4개의 합", section:"lower" },
-  { id:"fullHouse",     label:"Full House",     sub:"3+2 → 전체 합",   section:"lower" },
-  { id:"smallStraight", label:"Small Straight", sub:"연속 4개 → 15점", section:"lower" },
-  { id:"largeStraight", label:"Large Straight", sub:"연속 5개 → 30점", section:"lower" },
-  { id:"choice",        label:"Choice",         sub:"전체 합",         section:"lower" },
-  { id:"yacht",         label:"YACHT 🛥",       sub:"5개 동일 → 50점", section:"lower" },
+  { id:'ones',          label:'Ones',           section:'upper' },
+  { id:'twos',          label:'Twos',           section:'upper' },
+  { id:'threes',        label:'Threes',         section:'upper' },
+  { id:'fours',         label:'Fours',          section:'upper' },
+  { id:'fives',         label:'Fives',          section:'upper' },
+  { id:'sixes',         label:'Sixes',          section:'upper' },
+  { id:'fourOfKind',    label:'Four of a Kind', section:'lower' },
+  { id:'fullHouse',     label:'Full House',     section:'lower' },
+  { id:'smallStraight', label:'Small Straight', section:'lower' },
+  { id:'largeStraight', label:'Large Straight', section:'lower' },
+  { id:'choice',        label:'Choice',         section:'lower' },
+  { id:'yacht',         label:'YACHT 🛥',       section:'lower' },
 ];
-const UPPER = CATEGORIES.filter(c => c.section === "upper");
-const LOWER = CATEGORIES.filter(c => c.section === "lower");
-const PLAYER_COLORS = [
-  "#2196f3","#f44336","#4caf50","#ff9800","#9c27b0",
-  "#00bcd4","#e91e63","#8bc34a"
-];
-const MEDALS = ["🥇","🥈","🥉","4️⃣","5️⃣","6️⃣","7️⃣","8️⃣"];
+const UPPER = CATEGORIES.filter(c => c.section === 'upper');
+const LOWER = CATEGORIES.filter(c => c.section === 'lower');
 const DOTS = {
   1:[[50,50]],
   2:[[28,28],[72,72]],
@@ -420,287 +335,408 @@ const DOTS = {
   6:[[28,22],[72,22],[28,50],[72,50],[28,78],[72,78]],
 };
 
-// ══════════════════════════════════════════════════════════════════════════════
-//  URL PARAMS & SESSION
-// ══════════════════════════════════════════════════════════════════════════════
-const params      = new URLSearchParams(location.search);
-const ROOM_CODE   = (params.get('room') || 'XXXX').toUpperCase();
-const PLAYER_COUNT = Math.min(8, Math.max(2, parseInt(params.get('players') || '2')));
-const MY_NICK     = sessionStorage.getItem('pwf-nickname') || '플레이어 1';
+// ══════════════════════════════════════════════════════════
+//  SESSION
+// ══════════════════════════════════════════════════════════
+const myId    = genUserId();
+const myNick  = getMyNick();
+const { roomCode, playerCount: initPC, isHost } = parseRoomParams();
 
-// 방 코드 표시
-document.getElementById('setup-code-display').textContent = ROOM_CODE;
+let playerCount = initPC;
+let mySlot      = -1;
+let roomRef     = null;
+let unsubRoom   = null;
+let gstate      = null;            // 서버 동기화 게임 상태
+let isRolling   = false;           // 로컬 애니메이션 중 여부
+let viewSlot    = 0;               // 현재 점수판에서 보고 있는 플레이어 슬롯
+let roomPlayers = {};              // { 0:{nick,...}, ... }
 
-// 뒤로가기
-window.goHome = function() { window.location.href = '/'; };
+if (!roomCode) { window.location.href = '/'; }
 
-// ══════════════════════════════════════════════════════════════════════════════
-//  SETUP — 플레이어 이름 입력
-// ══════════════════════════════════════════════════════════════════════════════
-let setupPlayers = [];
-for (let i = 0; i < PLAYER_COUNT; i++) {
-  setupPlayers.push({ name: i === 0 ? MY_NICK : `플레이어 ${i + 1}` });
-}
-
-function renderSetup() {
-  const list = document.getElementById('player-list');
-  list.innerHTML = '';
-  setupPlayers.forEach((p, i) => {
-    const row = document.createElement('div');
-    row.className = 'player-row';
-    row.innerHTML = `
-      <div class="player-num" style="background:${PLAYER_COLORS[i]}">${i + 1}</div>
-      <input class="player-input" maxlength="12"
-        style="border-color:${PLAYER_COLORS[i]}66"
-        value="${p.name}" data-idx="${i}"
-        placeholder="플레이어 ${i + 1} 이름" />
-    `;
-    list.appendChild(row);
-  });
-
-  list.querySelectorAll('input').forEach(inp => {
-    inp.addEventListener('input', e => {
-      setupPlayers[+e.target.dataset.idx].name = e.target.value;
-    });
-  });
-}
-
-// ══════════════════════════════════════════════════════════════════════════════
-//  GAME STATE
-// ══════════════════════════════════════════════════════════════════════════════
-let state = {
-  players: [],
-  scores: [],
-  curPlayer: 0,
-  round: 1,
-  totalRounds: 12,
-  dice: [1,1,1,1,1],
-  held: [false,false,false,false,false],
-  rollsLeft: 3,
-  rolling: false,
-  lastScored: null,
-};
-
-// ══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
 //  SCORE ENGINE
-// ══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
 function calcScore(id, dice) {
   const cnt = Array(7).fill(0);
   dice.forEach(d => cnt[d]++);
   const sum = dice.reduce((a,b) => a+b, 0);
   const vals = cnt.slice(1).filter(c => c > 0).sort((a,b) => b-a);
-  switch (id) {
-    case "ones":   return cnt[1]*1;
-    case "twos":   return cnt[2]*2;
-    case "threes": return cnt[3]*3;
-    case "fours":  return cnt[4]*4;
-    case "fives":  return cnt[5]*5;
-    case "sixes":  return cnt[6]*6;
-    case "fourOfKind":
-      for (let i=1;i<=6;i++) if (cnt[i]>=4) return i*4;
-      return 0;
-    case "fullHouse":
-      if ((vals[0]===3 && vals[1]===2) || vals[0]===5) return sum;
-      return 0;
-    case "smallStraight": {
-      const u = [...new Set(dice)].sort((a,b)=>a-b).join("");
-      return (u.includes("1234")||u.includes("2345")||u.includes("3456")) ? 15 : 0;
+  switch(id) {
+    case 'ones':   return cnt[1]*1;
+    case 'twos':   return cnt[2]*2;
+    case 'threes': return cnt[3]*3;
+    case 'fours':  return cnt[4]*4;
+    case 'fives':  return cnt[5]*5;
+    case 'sixes':  return cnt[6]*6;
+    case 'fourOfKind':
+      for (let i=1;i<=6;i++) if(cnt[i]>=4) return i*4; return 0;
+    case 'fullHouse':
+      return ((vals[0]===3&&vals[1]===2)||vals[0]===5) ? sum : 0;
+    case 'smallStraight': {
+      const u=[...new Set(dice)].sort((a,b)=>a-b).join('');
+      return (u.includes('1234')||u.includes('2345')||u.includes('3456')) ? 15 : 0;
     }
-    case "largeStraight": {
-      const s = [...new Set(dice)].sort((a,b)=>a-b).join("");
-      return (s==="12345"||s==="23456") ? 30 : 0;
+    case 'largeStraight': {
+      const s=[...new Set(dice)].sort((a,b)=>a-b).join('');
+      return (s==='12345'||s==='23456') ? 30 : 0;
     }
-    case "choice": return sum;
-    case "yacht":  return vals[0]===5 ? 50 : 0;
+    case 'choice': return sum;
+    case 'yacht':  return vals[0]===5 ? 50 : 0;
     default: return 0;
   }
 }
 
 function getTotal(scores) {
-  const upper = UPPER.reduce((s,c) => s+(scores[c.id]??0), 0);
+  const upper = UPPER.reduce((s,c) => s+(scores?.[c.id]??0), 0);
   const bonus  = upper >= 63 ? 35 : 0;
-  const lower  = LOWER.reduce((s,c) => s+(scores[c.id]??0), 0);
+  const lower  = LOWER.reduce((s,c) => s+(scores?.[c.id]??0), 0);
   return { upper, bonus, lower, grand: upper+bonus+lower };
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-//  SCREEN HELPER
-// ══════════════════════════════════════════════════════════════════════════════
-function showScreen(id) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
+// ══════════════════════════════════════════════════════════
+//  FIREBASE SERIALIZATION
+// ══════════════════════════════════════════════════════════
+function serializeGame(g) {
+  return {
+    turn:        g.turn,
+    round:       g.round,
+    dice:        g.dice.reduce((o,v,i) => {o[i]=v;return o}, {}),
+    held:        g.held.reduce((o,v,i) => {o[i]=v;return o}, {}),
+    rollsLeft:   g.rollsLeft,
+    scores:      g.scores,
+    gameOver:    g.gameOver,
+    playerCount: g.playerCount,
+  };
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-//  START GAME
-// ══════════════════════════════════════════════════════════════════════════════
-document.getElementById('btn-start').addEventListener('click', () => {
-  state.players = setupPlayers.map((p,i) => ({
-    name: p.name.trim() || `플레이어 ${i+1}`,
-    color: PLAYER_COLORS[i],
-  }));
-  state.scores = state.players.map(() => ({}));
-  state.curPlayer = 0;
-  state.round = 1;
-  state.dice = [1,1,1,1,1];
-  state.held = [false,false,false,false,false];
-  state.rollsLeft = 3;
-  state.rolling = false;
-  showTransition();
+function deserializeGame(g) {
+  return {
+    turn:        g.turn || 0,
+    round:       g.round || 1,
+    dice:        Object.values(g.dice  || {0:1,1:1,2:1,3:1,4:1}).map(Number),
+    held:        Object.values(g.held  || {0:false,1:false,2:false,3:false,4:false}).map(Boolean),
+    rollsLeft:   g.rollsLeft !== undefined ? g.rollsLeft : 3,
+    scores:      g.scores || {},
+    gameOver:    g.gameOver || false,
+    playerCount: g.playerCount || 2,
+  };
+}
+
+function makeFreshGame(pc) {
+  const scores = {};
+  for (let i = 0; i < pc; i++) scores[i] = {};
+  return {
+    turn: 0, round: 1,
+    dice: [1,1,1,1,1], held: [false,false,false,false,false],
+    rollsLeft: 3, scores, gameOver: false, playerCount: pc,
+  };
+}
+
+async function pushGame(newG) {
+  await update(roomRef, { game: serializeGame(newG) });
+}
+
+// ══════════════════════════════════════════════════════════
+//  INIT — URL 파라미터로 방 생성/참가
+// ══════════════════════════════════════════════════════════
+roomRef = ref(db, `games/yacht/${roomCode}`);
+document.getElementById('gameCode').textContent = roomCode;
+
+(async () => {
+  if (isHost) {
+    mySlot = 0;
+    await set(roomRef, {
+      code: roomCode, playerCount, status: 'waiting',
+      players: { 0: { id:myId, nick:myNick, slot:0, online:true } },
+      createdAt: serverTimestamp(),
+    });
+  } else {
+    const snap = await get(roomRef);
+    if (!snap.exists()) { showToast('존재하지 않는 방'); setTimeout(goHome,2000); return; }
+    const room = snap.val();
+    playerCount = room.playerCount || 2;
+
+    if (room.status !== 'waiting') {
+      // 재접속 처리
+      const existing = Object.entries(room.players||{}).find(([,p])=>p.id===myId);
+      if (existing) {
+        mySlot = parseInt(existing[0]);
+        await update(ref(db,`games/yacht/${roomCode}/players/${mySlot}`),{online:true});
+      } else {
+        showToast('이미 게임이 시작된 방입니다'); setTimeout(goHome,2000); return;
+      }
+    } else {
+      const players = room.players || {};
+      const taken = Object.keys(players).map(Number);
+      if (taken.length >= room.playerCount) { showToast('방이 꽉 찼습니다'); setTimeout(goHome,2000); return; }
+      let slot = -1;
+      for (let i=0;i<room.playerCount;i++) { if(!players[i]){slot=i;break;} }
+      mySlot = slot;
+      await update(ref(db,`games/yacht/${roomCode}/players`), {
+        [slot]: { id:myId, nick:myNick, slot, online:true }
+      });
+    }
+  }
+  subscribeRoom();
+})();
+
+// ══════════════════════════════════════════════════════════
+//  FIREBASE 구독
+// ══════════════════════════════════════════════════════════
+function subscribeRoom() {
+  if (unsubRoom) unsubRoom();
+  unsubRoom = onValue(roomRef, snap => {
+    if (!snap.exists()) { showToast('방이 삭제됐습니다'); setTimeout(goHome,1500); return; }
+    const room = snap.val();
+    playerCount  = room.playerCount || 2;
+    roomPlayers  = room.players || {};
+
+    if (room.status === 'waiting') {
+      document.getElementById('waitCode').textContent = roomCode;
+      document.getElementById('waitMode').textContent = `${playerCount}인`;
+      renderWaitingSlots('waitingList', roomPlayers, playerCount, myId);
+      updateStartButton('startBtn', mySlot, roomPlayers, playerCount);
+      showScreen('waitScreen');
+    } else if (room.status === 'playing' && room.game) {
+      const newG = deserializeGame(room.game);
+      const wasPlaying = document.getElementById('gameScreen').classList.contains('active');
+      if (!wasPlaying) enterGame(room);
+      if (!isRolling) {
+        gstate = newG;
+        renderGame();
+      }
+    }
+  });
+}
+
+// ══════════════════════════════════════════════════════════
+//  게임 시작 / 나가기
+// ══════════════════════════════════════════════════════════
+document.getElementById('startBtn').addEventListener('click', async () => {
+  if (mySlot !== 0) return;
+  const snap = await get(roomRef);
+  const room = snap.val();
+  if (Object.keys(room.players||{}).length !== room.playerCount) {
+    showToast('모든 플레이어가 참가해야 합니다'); return;
+  }
+  await update(roomRef, { status:'playing', game: serializeGame(makeFreshGame(room.playerCount)) });
 });
 
-// ══════════════════════════════════════════════════════════════════════════════
-//  TRANSITION
-// ══════════════════════════════════════════════════════════════════════════════
-function showTransition() {
-  const p = state.players[state.curPlayer];
-  const av = document.getElementById('trans-avatar');
-  av.textContent = p.name[0].toUpperCase();
-  av.style.background = p.color;
-  av.style.boxShadow = `0 0 40px ${p.color}88`;
-  document.getElementById('trans-round').textContent =
-    `${state.round} / ${state.totalRounds} 라운드`;
-  document.getElementById('trans-name').textContent = `${p.name}의 차례`;
-  const btn = document.getElementById('btn-ready');
-  btn.style.background = p.color;
-  btn.style.boxShadow = `0 4px 24px ${p.color}66`;
-  showScreen('transition-screen');
+function goHome() {
+  if (unsubRoom) { unsubRoom(); unsubRoom=null; }
+  if (mySlot >= 0)
+    update(ref(db,`games/yacht/${roomCode}/players/${mySlot}`),{online:false}).catch(()=>{});
+  window.location.href = '/';
 }
 
-document.getElementById('btn-ready').addEventListener('click', () => {
-  showScreen('game-screen');
-  renderGame();
-});
+document.getElementById('leaveBtn').addEventListener('click', goHome);
+document.getElementById('leaveGameBtn').addEventListener('click', goHome);
+document.getElementById('backBtn').addEventListener('click', goHome);
+document.getElementById('backFromResult').addEventListener('click', goHome);
 
-// ══════════════════════════════════════════════════════════════════════════════
-//  DICE SVG
-// ══════════════════════════════════════════════════════════════════════════════
-function makeDieSVG(value, color, isHeld) {
-  const dots = DOTS[value] || [];
-  const fill = isHeld ? color : "#1a1a1a";
-  return `<svg width="64" height="64" viewBox="0 0 100 100">
-    ${dots.map(([cx,cy]) => `<circle cx="${cx}" cy="${cy}" r="9" fill="${fill}"/>`).join('')}
-  </svg>`;
+// ══════════════════════════════════════════════════════════
+//  게임 화면 초기화
+// ══════════════════════════════════════════════════════════
+function enterGame(room) {
+  roomPlayers = room.players || {};
+  buildPlayerCards();
+  buildScoreTabs();
+  showScreen('gameScreen');
 }
 
-function renderDice() {
-  const row = document.getElementById('dice-row');
+function buildPlayerCards() {
+  const row = document.getElementById('pcardRow');
   row.innerHTML = '';
-  const p = state.players[state.curPlayer];
-  state.dice.forEach((val, i) => {
+  for (let i = 0; i < playerCount; i++) {
+    const nick = roomPlayers[i]?.nick || `P${i+1}`;
     const div = document.createElement('div');
-    div.className = 'die' + (state.held[i]?' held':'') + (state.rolling&&!state.held[i]?' rolling':'');
-    div.style.background = state.held[i]
-      ? `linear-gradient(135deg,${p.color}22,${p.color}44)`
+    div.className = `pcard p${i}`;
+    div.id = `pcard${i}`;
+    div.innerHTML = `
+      <div class="pcard-name" style="color:${PLAYER_COLORS[i]}">
+        <span style="opacity:.7">■</span> ${nick}${i===mySlot?' (나)':''}
+      </div>
+      <div class="pcard-score" id="pscore${i}">0</div>
+      <div class="pcard-sub" id="psub${i}"></div>`;
+    row.appendChild(div);
+  }
+}
+
+function buildScoreTabs() {
+  const tabs = document.getElementById('scoreTabs');
+  tabs.innerHTML = '';
+  for (let i = 0; i < playerCount; i++) {
+    const nick = roomPlayers[i]?.nick || `P${i+1}`;
+    const btn = document.createElement('button');
+    btn.className = 'score-tab' + (i === 0 ? ' active' : '');
+    btn.textContent = nick;
+    btn.style.borderColor = PLAYER_COLORS[i];
+    btn.dataset.slot = i;
+    btn.addEventListener('click', () => {
+      viewSlot = i;
+      tabs.querySelectorAll('.score-tab').forEach(t => t.classList.remove('active'));
+      btn.classList.add('active');
+      renderScoreGrid();
+    });
+    tabs.appendChild(btn);
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+//  RENDER GAME
+// ══════════════════════════════════════════════════════════
+function isMyTurn() { return gstate && !gstate.gameOver && gstate.turn === mySlot; }
+
+function renderGame() {
+  if (!gstate) return;
+  const g = gstate;
+  const myTurn = isMyTurn();
+  const turnColor = PLAYER_COLORS[g.turn];
+  const turnNick  = roomPlayers[g.turn]?.nick || `P${g.turn+1}`;
+
+  // 헤더
+  const av = document.getElementById('curAvatar');
+  av.textContent = turnNick[0].toUpperCase();
+  av.style.background = turnColor;
+  av.style.boxShadow = `0 0 16px ${turnColor}88`;
+  document.getElementById('curName').textContent = turnNick;
+  document.getElementById('curRound').textContent = `라운드 ${g.round}/12`;
+
+  // 진행 바
+  const progress = ((g.round-1)*playerCount + g.turn) / (12*playerCount) * 100;
+  const fill = document.getElementById('progressFill');
+  fill.style.width = progress + '%';
+  fill.style.background = `linear-gradient(90deg,${turnColor},${turnColor}aa)`;
+
+  // 플레이어 카드 업데이트
+  for (let i = 0; i < playerCount; i++) {
+    const card = document.getElementById(`pcard${i}`);
+    if (!card) continue;
+    const { grand } = getTotal(g.scores?.[i]);
+    card.classList.toggle('active', i === g.turn && !g.gameOver);
+    document.getElementById(`pscore${i}`).textContent = grand;
+    const subEl = document.getElementById(`psub${i}`);
+    subEl.textContent = i === g.turn && !g.gameOver
+      ? (i === mySlot ? '◀ 내 차례' : '◀ 차례') : '';
+  }
+
+  // 주사위 영역 잠금
+  const diceArea = document.getElementById('diceArea');
+  const overlay  = document.getElementById('notTurnOverlay');
+  if (!myTurn || g.gameOver) {
+    diceArea.classList.add('locked-area');
+    overlay.textContent = g.gameOver ? '게임 종료' : `${turnNick}의 차례입니다...`;
+  } else {
+    diceArea.classList.remove('locked-area');
+  }
+
+  // 주사위 렌더
+  renderDice(g.dice, g.held, !myTurn || isRolling);
+
+  // 굴리기 버튼
+  const btnRoll = document.getElementById('btnRoll');
+  const canRoll = myTurn && !g.gameOver && g.rollsLeft > 0 && !isRolling;
+  btnRoll.disabled = !canRoll;
+  btnRoll.style.background = canRoll ? `linear-gradient(135deg,${turnColor},${turnColor}bb)` : '';
+  btnRoll.style.boxShadow  = canRoll ? `0 4px 20px ${turnColor}55` : 'none';
+  btnRoll.textContent = isRolling ? '굴리는 중...'
+    : g.rollsLeft > 0 ? `🎲 굴리기 (${g.rollsLeft}회 남음)` : '굴리기 완료';
+
+  document.getElementById('diceHint').textContent =
+    g.rollsLeft < 3 ? '주사위 클릭 = 고정/해제' : '굴려서 시작';
+
+  // 점수판 탭 동기화 (현재 내 탭 선택 시 현재 턴 플레이어 탭으로 보기)
+  renderScoreGrid();
+
+  // 상태 바
+  const sb = document.getElementById('statusBar');
+  if (g.gameOver) { sb.textContent = '게임 종료!'; showResults(); }
+  else if (myTurn) {
+    sb.className = 'status-bar my-turn-alert';
+    sb.textContent = g.rollsLeft >= 3
+      ? '내 차례 — 주사위를 굴리세요'
+      : g.rollsLeft === 0
+        ? '내 차례 — 점수 칸을 선택하세요'
+        : '내 차례 — 주사위를 고정하거나 다시 굴리세요';
+  } else {
+    sb.className = 'status-bar';
+    sb.textContent = `${turnNick}의 차례...`;
+  }
+}
+
+// ── 주사위 DOM 렌더 ──────────────────────────────────────────────────────────
+function renderDice(dice, held, locked) {
+  const row = document.getElementById('diceRow');
+  row.innerHTML = '';
+  const turnColor = PLAYER_COLORS[gstate?.turn || 0];
+  dice.forEach((val, i) => {
+    const div = document.createElement('div');
+    div.className = 'die'
+      + (held[i] ? ' held' : '')
+      + (locked ? ' locked' : '');
+    div.style.background = held[i]
+      ? `linear-gradient(135deg,${turnColor}22,${turnColor}44)`
       : 'linear-gradient(135deg,#fff,#e8e8e8)';
-    div.style.border = state.held[i]
-      ? `3px solid ${p.color}`
-      : '2px solid #bbb';
-    div.style.boxShadow = state.held[i]
-      ? `0 0 16px ${p.color}66, 0 3px 8px #0004`
+    div.style.border = held[i] ? `3px solid ${turnColor}` : '2px solid #bbb';
+    div.style.boxShadow = held[i]
+      ? `0 0 16px ${turnColor}66,0 3px 8px #0004`
       : '0 3px 10px #0003';
-    div.innerHTML = makeDieSVG(val, p.color, state.held[i]);
-    div.addEventListener('click', () => toggleHold(i));
+    div.innerHTML = makeDieSVG(val, turnColor, held[i]);
+    if (!locked) div.addEventListener('click', () => doToggleHold(i));
     row.appendChild(div);
   });
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-//  GAME RENDER
-// ══════════════════════════════════════════════════════════════════════════════
-function renderGame() {
-  const p = state.players[state.curPlayer];
-  const myScores = state.scores[state.curPlayer];
-  const hasRolled = state.rollsLeft < 3;
+function makeDieSVG(value, color, isHeld) {
+  const dots = DOTS[value] || [];
+  const fill = isHeld ? color : '#1a1a1a';
+  return `<svg width="60" height="60" viewBox="0 0 100 100">
+    ${dots.map(([cx,cy]) => `<circle cx="${cx}" cy="${cy}" r="9" fill="${fill}"/>`).join('')}
+  </svg>`;
+}
 
-  const av = document.getElementById('cur-avatar');
-  av.textContent = p.name[0].toUpperCase();
-  av.style.background = p.color;
-  av.style.boxShadow = `0 0 16px ${p.color}88`;
-  document.getElementById('cur-name').textContent = p.name;
-  document.getElementById('cur-round').textContent =
-    `라운드 ${state.round}/${state.totalRounds}`;
+// ── 점수 그리드 렌더 ──────────────────────────────────────────────────────────
+function renderScoreGrid() {
+  if (!gstate) return;
+  const g = gstate;
+  const viewScores = g.scores?.[viewSlot] || {};
+  const isViewingTurnPlayer = viewSlot === g.turn;
+  const hasRolled = g.rollsLeft < 3;
+  const canScore  = isMyTurn() && viewSlot === mySlot && hasRolled && !isRolling;
+  const viewColor = PLAYER_COLORS[viewSlot];
 
-  const hr = document.getElementById('header-right');
-  hr.querySelectorAll('.mini-player').forEach(el => el.remove());
-  const sbBtn = document.getElementById('btn-open-scoreboard');
-  state.players.forEach((pl, i) => {
-    const tot = getTotal(state.scores[i]).grand;
-    const div = document.createElement('div');
-    div.className = 'mini-player' + (i===state.curPlayer?'':' inactive');
-    div.innerHTML = `
-      <div class="mini-avatar" style="background:${pl.color};
-        ${i===state.curPlayer?'border:2px solid #fff;':''}">${pl.name[0].toUpperCase()}</div>
-      <div class="mini-score">${tot}</div>
-    `;
-    hr.insertBefore(div, sbBtn);
-  });
+  renderSection('upperCats', UPPER, viewScores, g.dice, canScore, isViewingTurnPlayer && hasRolled, viewColor);
+  renderSection('lowerCats', LOWER, viewScores, g.dice, canScore, isViewingTurnPlayer && hasRolled, viewColor);
 
-  const progress = ((state.round-1)*state.players.length + state.curPlayer)
-    / (state.totalRounds * state.players.length) * 100;
-  const fill = document.getElementById('progress-fill');
-  fill.style.width = progress + '%';
-  fill.style.background = `linear-gradient(90deg,${p.color},${p.color}aa)`;
-
-  renderDice();
-
-  const rollBtn = document.getElementById('btn-roll');
-  rollBtn.style.background = state.rollsLeft>0&&!state.rolling
-    ? `linear-gradient(135deg,${p.color},${p.color}bb)` : '';
-  rollBtn.style.boxShadow = state.rollsLeft>0&&!state.rolling
-    ? `0 4px 20px ${p.color}55` : 'none';
-  rollBtn.disabled = state.rollsLeft<=0 || state.rolling;
-  rollBtn.textContent = state.rolling ? '굴리는 중...'
-    : state.rollsLeft>0 ? `🎲 굴리기 (${state.rollsLeft}회 남음)` : '굴리기 완료';
-  document.getElementById('dice-hint').textContent =
-    hasRolled ? '주사위 클릭 = 고정/해제' : '굴려서 시작';
-
-  renderCats(myScores, hasRolled, p.color);
-
-  const { upper, bonus, lower, grand } = getTotal(myScores);
-  const utd = document.getElementById('upper-total-display');
+  const { upper, bonus, grand } = getTotal(viewScores);
+  const utd = document.getElementById('upperTotalDisplay');
   utd.textContent = `${upper}/63`;
-  utd.style.color = upper>=63 ? '#4caf50' : '#fff';
-  utd.style.fontWeight = '700';
-  const bd = document.getElementById('bonus-display');
-  const br = document.getElementById('bonus-row');
-  if (bonus > 0) {
-    bd.textContent = '+35';
-    br.style.color = '#4caf50';
-  } else {
-    bd.textContent = `잔여: ${63-upper}`;
-    br.style.color = 'rgba(255,255,255,0.35)';
-  }
+  utd.style.color = upper >= 63 ? '#4caf50' : '#fff';
+  const bd = document.getElementById('bonusDisplay');
+  const br = document.getElementById('bonusRow');
+  if (bonus > 0) { bd.textContent = '+35'; br.style.color = '#4caf50'; }
+  else { bd.textContent = `잔여: ${63-upper}`; br.style.color = 'rgba(255,255,255,.35)'; }
 
-  const tb = document.getElementById('total-bar');
-  tb.style.background = `linear-gradient(135deg,${p.color}18,${p.color}08)`;
-  tb.style.border = `1px solid ${p.color}44`;
-  document.getElementById('total-label').textContent = `${p.name} 현재 점수`;
-  document.getElementById('total-score').textContent = `${grand}점`;
+  const tb = document.getElementById('totalBar');
+  tb.style.background = `linear-gradient(135deg,${viewColor}18,${viewColor}08)`;
+  tb.style.border = `1px solid ${viewColor}44`;
+  const nick = roomPlayers[viewSlot]?.nick || `P${viewSlot+1}`;
+  document.getElementById('totalLabel').textContent = `${nick} 현재 점수`;
+  document.getElementById('totalScore').textContent = `${grand}점`;
 }
 
-function renderCats(myScores, hasRolled, color) {
-  renderSection('upper-cats', UPPER, myScores, hasRolled, color);
-  renderSection('lower-cats', LOWER, myScores, hasRolled, color);
-}
-
-function renderSection(containerId, cats, myScores, hasRolled, color) {
-  const container = document.getElementById(containerId);
+function renderSection(id, cats, scores, dice, canScore, showPreview, color) {
+  const container = document.getElementById(id);
   container.innerHTML = '';
   cats.forEach(cat => {
-    const scored = myScores[cat.id] !== undefined;
-    const preview = hasRolled && !scored ? calcScore(cat.id, state.dice) : null;
+    const scored = scores[cat.id] !== undefined;
+    const preview = showPreview && !scored ? calcScore(cat.id, dice) : null;
     const row = document.createElement('div');
     row.className = 'cat-row'
-      + (!scored && hasRolled ? ' available' : '')
-      + (scored && myScores[cat.id]===0 ? ' scored-zero' : '');
+      + (!scored && canScore ? ' available' : '')
+      + (scored && scores[cat.id] === 0 ? ' scored-zero' : '');
 
-    if (state.lastScored === cat.id) {
-      row.style.background = 'rgba(76,175,80,0.25)';
-      row.style.border = '1px solid rgba(76,175,80,0.5)';
-    }
-
-    if (!scored && hasRolled) {
+    if (!scored && canScore) {
       row.addEventListener('mouseenter', () => {
         row.style.background = `${color}22`;
         row.style.border = `1px solid ${color}66`;
@@ -709,168 +745,166 @@ function renderSection(containerId, cats, myScores, hasRolled, color) {
         row.style.background = '';
         row.style.border = '1px solid transparent';
       });
-      row.addEventListener('click', () => selectCategory(cat.id));
+      row.addEventListener('click', () => doScore(cat.id));
     }
 
-    let scoreText, scoreColor;
+    let txt, clr;
     if (scored) {
-      scoreText = myScores[cat.id];
-      scoreColor = myScores[cat.id]===0 ? 'rgba(255,255,255,0.2)' : '#fff';
+      txt = scores[cat.id]; clr = scores[cat.id] === 0 ? 'rgba(255,255,255,.2)' : '#fff';
     } else if (preview !== null) {
-      scoreText = `+${preview}`;
-      scoreColor = preview>0 ? color : 'rgba(255,255,255,0.25)';
+      txt = `+${preview}`; clr = preview > 0 ? color : 'rgba(255,255,255,.25)';
     } else {
-      scoreText = '—';
-      scoreColor = 'rgba(255,255,255,0.15)';
+      txt = '—'; clr = 'rgba(255,255,255,.15)';
     }
-
-    row.innerHTML = `
-      <div class="cat-label">${cat.label}</div>
-      <span class="cat-score" style="color:${scoreColor}">${scoreText}</span>
-    `;
+    row.innerHTML = `<div class="cat-label">${cat.label}</div>
+      <span class="cat-score" style="color:${clr}">${txt}</span>`;
     container.appendChild(row);
   });
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-//  GAME LOGIC
-// ══════════════════════════════════════════════════════════════════════════════
-let rollInterval = null;
+// ══════════════════════════════════════════════════════════
+//  게임 액션
+// ══════════════════════════════════════════════════════════
 
-document.getElementById('btn-roll').addEventListener('click', () => {
-  if (state.rollsLeft<=0 || state.rolling) return;
-  state.rolling = true;
+// 주사위 굴리기
+document.getElementById('btnRoll').addEventListener('click', async () => {
+  if (!isMyTurn() || gstate.rollsLeft <= 0 || isRolling) return;
+  isRolling = true;
   renderGame();
+
+  const heldDice  = [...gstate.dice];
+  const heldState = [...gstate.held];
+  let localDice   = [...heldDice];
   let ticks = 0;
-  rollInterval = setInterval(() => {
-    state.dice = state.dice.map((d,i) =>
-      state.held[i] ? d : Math.ceil(Math.random()*6)
+
+  const interval = setInterval(async () => {
+    localDice = heldDice.map((d, i) =>
+      heldState[i] ? d : Math.ceil(Math.random() * 6)
     );
-    renderDice();
+    renderDice(localDice, heldState, false); // 로컬 애니메이션
     if (++ticks >= 8) {
-      clearInterval(rollInterval);
-      state.rolling = false;
-      state.rollsLeft--;
-      renderGame();
+      clearInterval(interval);
+      isRolling = false;
+      const finalDice = localDice;
+      gstate = { ...gstate, dice: finalDice, rollsLeft: gstate.rollsLeft - 1 };
+      await pushGame(gstate);
     }
   }, 55);
 });
 
-function toggleHold(i) {
-  if (state.rollsLeft>=3 || state.rolling) return;
-  state.held[i] = !state.held[i];
-  renderDice();
+// 주사위 고정/해제
+async function doToggleHold(i) {
+  if (!isMyTurn() || gstate.rollsLeft >= 3 || isRolling) return;
+  const newHeld = [...gstate.held];
+  newHeld[i] = !newHeld[i];
+  gstate = { ...gstate, held: newHeld };
+  renderDice(gstate.dice, gstate.held, false);
+  await pushGame(gstate);
 }
 
-function selectCategory(catId) {
-  const myScores = state.scores[state.curPlayer];
-  if (myScores[catId]!==undefined || state.rollsLeft>=3 || state.rolling) return;
-  const pts = calcScore(catId, state.dice);
-  myScores[catId] = pts;
-  state.lastScored = catId;
-  renderGame();
+// 점수 선택
+async function doScore(catId) {
+  if (!isMyTurn() || gstate.rollsLeft >= 3 || isRolling) return;
+  const myScores = gstate.scores?.[mySlot] || {};
+  if (myScores[catId] !== undefined) return;
 
-  const nextPlayer = (state.curPlayer+1) % state.players.length;
-  const nextRound = nextPlayer===0 ? state.round+1 : state.round;
+  const pts = calcScore(catId, gstate.dice);
+  const newScores = JSON.parse(JSON.stringify(gstate.scores || {}));
+  if (!newScores[mySlot]) newScores[mySlot] = {};
+  newScores[mySlot][catId] = pts;
 
-  setTimeout(() => {
-    state.lastScored = null;
-    if (nextRound > state.totalRounds) {
-      showResult();
-      return;
-    }
-    state.curPlayer = nextPlayer;
-    state.round = nextRound;
-    state.dice = [1,1,1,1,1];
-    state.held = [false,false,false,false,false];
-    state.rollsLeft = 3;
-    state.rolling = false;
-    showTransition();
-  }, 600);
+  const n = gstate.playerCount;
+  const nextTurn  = (gstate.turn + 1) % n;
+  const nextRound = nextTurn === 0 ? gstate.round + 1 : gstate.round;
+  const gameOver  = nextRound > 12;
+
+  const newG = {
+    turn:        gameOver ? gstate.turn : nextTurn,
+    round:       gameOver ? gstate.round : nextRound,
+    dice:        [1,1,1,1,1],
+    held:        [false,false,false,false,false],
+    rollsLeft:   3,
+    scores:      newScores,
+    gameOver,
+    playerCount: n,
+  };
+
+  gstate = newG;
+  // 다음 자기 차례 탭으로 전환
+  viewSlot = nextTurn;
+  const tabs = document.getElementById('scoreTabs');
+  tabs.querySelectorAll('.score-tab').forEach((t,i) => t.classList.toggle('active', i === viewSlot));
+
+  await pushGame(gstate);
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-//  SCOREBOARD MODAL
-// ══════════════════════════════════════════════════════════════════════════════
-document.getElementById('btn-open-scoreboard').addEventListener('click', () => {
-  const modal = document.getElementById('scoreboard-modal');
-  const table = document.getElementById('scoreboard-table');
-  const players = state.players;
-  const scores = state.scores;
+// ══════════════════════════════════════════════════════════
+//  결과 화면
+// ══════════════════════════════════════════════════════════
+function showResults() {
+  if (document.getElementById('overlay').classList.contains('show')) return;
+  const totals = Array.from({length: playerCount}, (_,i) => ({
+    slot: i,
+    nick: roomPlayers[i]?.nick || `P${i+1}`,
+    ...getTotal(gstate.scores?.[i] || {}),
+  })).sort((a,b) => b.grand - a.grand);
 
+  const rows = document.getElementById('resultRows');
+  rows.innerHTML = totals.map((p,i) => `
+    <div class="result-row">
+      <div class="result-rank" style="color:${RANK_COLORS[i]}">${RANK_EMOJIS[i]}</div>
+      <div class="result-dot" style="background:${PLAYER_COLORS[p.slot]}"></div>
+      <div style="flex:1;text-align:left">
+        <div class="result-name">${p.nick}${p.slot===mySlot?' (나)':''}</div>
+        <div class="result-sub-detail">상단 ${p.upper}${p.bonus>0?` +${p.bonus}보너스`:''} · 하단 ${p.lower}</div>
+      </div>
+      <div class="result-note" style="font-size:18px;font-weight:800;color:${i===0?'#ffd54f':'rgba(255,255,255,.7)'}">${p.grand}</div>
+    </div>`).join('');
+
+  setTimeout(() => document.getElementById('overlay').classList.add('show'), 600);
+}
+
+// ══════════════════════════════════════════════════════════
+//  점수판 모달
+// ══════════════════════════════════════════════════════════
+document.getElementById('btnScoreboard').addEventListener('click', () => {
+  if (!gstate) return;
+  const players = Array.from({length:playerCount},(_,i)=>roomPlayers[i]||{nick:`P${i+1}`});
   let html = `<thead><tr><th style="text-align:left">족보</th>
-    ${players.map((p)=>`<th style="color:${p.color}">${p.name}</th>`).join('')}
+    ${players.map((p,i)=>`<th style="color:${PLAYER_COLORS[i]}">${p.nick}</th>`).join('')}
   </tr></thead><tbody>`;
-
   CATEGORIES.forEach(cat => {
     html += `<tr><td>${cat.label}</td>`;
-    scores.forEach(s => {
-      const v = s[cat.id];
-      const clr = v===undefined ? 'rgba(255,255,255,0.2)'
-        : v===0 ? 'rgba(255,255,255,0.25)' : '#fff';
-      html += `<td style="color:${clr};font-weight:${v>0?700:400}">
-        ${v!==undefined?v:'—'}
-      </td>`;
+    players.forEach((_,i) => {
+      const v = gstate.scores?.[i]?.[cat.id];
+      const clr = v===undefined?'rgba(255,255,255,.2)':v===0?'rgba(255,255,255,.25)':'#fff';
+      html += `<td style="color:${clr};font-weight:${v>0?700:400}">${v!==undefined?v:'—'}</td>`;
     });
     html += '</tr>';
   });
-
-  html += `<tr style="border-top:2px solid rgba(255,255,255,0.2)">
+  html += `<tr style="border-top:2px solid rgba(255,255,255,.2)">
     <td style="font-weight:700;color:#ffd54f">합계</td>
-    ${scores.map((s,i)=>`<td style="font-weight:800;color:${players[i].color}">
-      ${getTotal(s).grand}
-    </td>`).join('')}
+    ${players.map((_,i)=>`<td style="font-weight:800;color:${PLAYER_COLORS[i]}">${getTotal(gstate.scores?.[i]||{}).grand}</td>`).join('')}
   </tr></tbody>`;
-
-  table.innerHTML = html;
-  modal.style.display = 'flex';
+  document.getElementById('scoreboardTable').innerHTML = html;
+  document.getElementById('scoreboardModal').style.display = 'flex';
 });
-
-document.getElementById('btn-close-modal').addEventListener('click', () => {
-  document.getElementById('scoreboard-modal').style.display = 'none';
+document.getElementById('closeModal').addEventListener('click', () => {
+  document.getElementById('scoreboardModal').style.display = 'none';
 });
-document.getElementById('scoreboard-modal').addEventListener('click', (e) => {
+document.getElementById('scoreboardModal').addEventListener('click', e => {
   if (e.target === e.currentTarget)
-    document.getElementById('scoreboard-modal').style.display = 'none';
+    document.getElementById('scoreboardModal').style.display = 'none';
 });
 
-// ══════════════════════════════════════════════════════════════════════════════
-//  RESULT
-// ══════════════════════════════════════════════════════════════════════════════
-function showResult() {
-  const totals = state.scores.map((s,i) => ({
-    name: state.players[i].name,
-    color: state.players[i].color,
-    ...getTotal(s),
-  })).sort((a,b) => b.grand - a.grand);
-
-  const list = document.getElementById('result-list');
-  list.innerHTML = totals.map((p,i) => `
-    <div class="result-row ${i===0?'first':''}"
-      style="${i===0
-        ? `background:linear-gradient(135deg,${p.color}22,${p.color}08);border:1px solid ${p.color}55;`
-        : ''}">
-      <div class="result-medal">${MEDALS[i]}</div>
-      <div class="result-avatar" style="background:${p.color}">
-        ${p.name[0].toUpperCase()}
-      </div>
-      <div class="result-info">
-        <div class="result-name">${p.name}</div>
-        <div class="result-detail">
-          상단 ${p.upper}${p.bonus>0?` +${p.bonus}보너스`:''} · 하단 ${p.lower}
-        </div>
-      </div>
-      <div class="result-pts ${i===0?'first':''}">${p.grand}</div>
-    </div>
-  `).join('');
-
-  showScreen('result-screen');
-}
-
-// ══════════════════════════════════════════════════════════════════════════════
-//  INIT
-// ══════════════════════════════════════════════════════════════════════════════
-renderSetup();
+// ══════════════════════════════════════════════════════════
+//  연결 상태
+// ══════════════════════════════════════════════════════════
+onValue(ref(db, '.info/connected'), snap => {
+  const online = snap.val() === true;
+  document.getElementById('connDot').classList.toggle('offline', !online);
+  document.getElementById('connLabel').textContent = online ? '연결됨' : '연결 끊김';
+});
 </script>
 </body>
 </html>
