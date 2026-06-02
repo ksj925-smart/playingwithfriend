@@ -5,10 +5,13 @@
       "firebase.json",
       ".firebaserc",
       ".gitignore",
-      "firebase-config.js",
       "node_modules/**"
     ],
     "rewrites": [
+      {
+        "source": "/games/quoriko/**",
+        "destination": "/games/quoriko/index.html"
+      },
       {
         "source": "**",
         "destination": "/index.html"

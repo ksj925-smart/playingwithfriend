@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>쿼리도 — PlayingwithFriend</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;700;900&family=Bebas+Neue&display=swap');
+:root {
+  --bg:#0d0d0f; --surface:#161619; --board-bg:#1a1a1f;
+  --cell:#1e1e26; --cell-hover:#2a2a38;
+  --text:#e8e8f0; --muted:#666688;
+  --accent:#5555ff; --green:#44cc88; --red:#ff5555;
+  --p0:#e8c547; --p1:#e84747; --p2:#47b8e8; --p3:#47e888;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-serif;
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;
+  padding:14px 8px 50px;overflow-x:hidden}
+
+/* 뒤로가기 버튼 */
+.back-nav{width:100%;max-width:420px;display:flex;align-items:center;margin-bottom:6px}
+.back-nav-btn{background:none;border:none;color:var(--muted);font-family:'Noto Sans KR',sans-serif;
+  font-size:13px;cursor:pointer;display:flex;align-items:center;gap:5px;padding:4px 0;
+  transition:color .2s}
+.back-nav-btn:hover{color:var(--text)}
+
+h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(26px,6vw,46px);
+  letter-spacing:6px;color:#fff;text-align:center;margin-bottom:2px}
+.subtitle{font-size:10px;color:var(--muted);letter-spacing:3px;text-transform:uppercase;margin-bottom:16px}
+
+/* ── SCREENS ── */
+.screen{width:100%;max-width:420px;display:none;flex-direction:column;gap:12px;align-items:center}
+.screen.active{display:flex}
+
+/* lobby card */
+.card{background:var(--surface);border-radius:16px;padding:22px 24px;
+  width:100%;border:2px solid #333355;box-shadow:0 6px 28px #00000050}
+.card h2{font-size:16px;font-weight:900;margin-bottom:14px;letter-spacing:0.5px}
+.card h2 span{color:var(--accent)}
+
+label{font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;
+  display:block;margin-bottom:5px}
+
+.row{display:flex;gap:8px;margin-bottom:10px}
+.btn-full{width:100%;padding:13px;border-radius:12px;border:none;
+  font-family:'Noto Sans KR',sans-serif;font-size:14px;font-weight:900;
+  cursor:pointer;transition:all 0.2s;letter-spacing:0.5px}
+.btn-full.primary{background:var(--accent);color:#fff;box-shadow:0 4px 18px #5555ff40}
+.btn-full.primary:hover{transform:translateY(-2px);box-shadow:0 6px 22px #5555ff60}
+.btn-full.secondary{background:#1e1e26;color:var(--muted);border:2px solid #333355;margin-top:6px}
+.btn-full.secondary:hover{color:var(--text);border-color:var(--muted)}
+.btn-full:disabled{opacity:0.4;cursor:not-allowed;transform:none!important}
+
+/* room code display */
+.room-code-box{background:#0d0d0f;border-radius:12px;padding:14px 18px;
+  text-align:center;border:2px dashed #444466;margin:8px 0}
+.room-code{font-family:'Bebas Neue',sans-serif;font-size:42px;letter-spacing:10px;
+  color:var(--accent)}
+.room-code-hint{font-size:11px;color:var(--muted);margin-top:4px}
+
+/* waiting list */
+.waiting-list{width:100%;display:flex;flex-direction:column;gap:6px;margin:8px 0}
+.waiting-slot{display:flex;align-items:center;gap:10px;padding:10px 14px;
+  background:#0d0d0f;border-radius:10px;border:2px solid #333355}
+.waiting-slot.filled{border-color:#444466}
+.slot-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
+.slot-name{font-size:13px;font-weight:700;flex:1}
+.slot-tag{font-size:10px;color:var(--muted);padding:2px 8px;border-radius:8px;
+  background:#1e1e26;border:1px solid #333355}
+.slot-me{color:var(--accent);border-color:var(--accent);background:#5555ff15}
+
+/* ── GAME SCREEN ── */
+#gameScreen{max-width:600px}
+
+/* player cards */
+.players-row{display:flex;gap:6px;width:100%;margin-bottom:8px}
+.players-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;width:100%;margin-bottom:8px}
+.pcard{background:var(--surface);border-radius:10px;padding:8px 12px;
+  border:2px solid transparent;transition:all 0.2s;position:relative;overflow:hidden;flex:1}
+.pcard::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:2px 2px 0 0}
+.pcard.p0::before{background:var(--p0)} .pcard.p1::before{background:var(--p1)}
+.pcard.p2::before{background:var(--p2)} .pcard.p3::before{background:var(--p3)}
+.pcard.p0.active{border-color:var(--p0);box-shadow:0 3px 14px #e8c54728;transform:translateY(-2px)}
+.pcard.p1.active{border-color:var(--p1);box-shadow:0 3px 14px #e8474728;transform:translateY(-2px)}
+.pcard.p2.active{border-color:var(--p2);box-shadow:0 3px 14px #47b8e828;transform:translateY(-2px)}
+.pcard.p3.active{border-color:var(--p3);box-shadow:0 3px 14px #47e88828;transform:translateY(-2px)}
+.pcard.eliminated{opacity:0.35}
+.pcard-name{font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pcard.p0 .pcard-name{color:var(--p0)} .pcard.p1 .pcard-name{color:var(--p1)}
+.pcard.p2 .pcard-name{color:var(--p2)} .pcard.p3 .pcard-name{color:var(--p3)}
+.pcard-walls{font-size:18px;font-weight:900;line-height:1.2}
+.pcard-walls span{font-size:10px;color:var(--muted);font-weight:400}
+.pcard-sub{font-size:10px;color:var(--muted);margin-top:1px}
+.pcard.active .pcard-sub{color:#fff}
+.rank-badge{position:absolute;right:8px;top:8px;font-family:'Bebas Neue',sans-serif;font-size:18px}
+
+/* action bar */
+.action-bar{display:flex;gap:8px;margin-bottom:8px}
+.act-btn{padding:7px 16px;border-radius:20px;border:2px solid #333355;background:transparent;
+  color:var(--muted);font-family:'Noto Sans KR',sans-serif;font-size:12px;font-weight:700;
+  cursor:pointer;transition:all 0.2s}
+.act-btn.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.act-btn:disabled{opacity:0.3;cursor:not-allowed}
+
+/* board */
+.board-wrapper{position:relative;user-select:none;touch-action:none}
+.board{display:grid;gap:0;background:var(--board-bg);border-radius:12px;padding:7px;
+  border:2px solid #333355;box-shadow:0 8px 32px #00000060}
+.cell{background:var(--cell);border-radius:5px;display:flex;align-items:center;
+  justify-content:center;cursor:pointer;transition:background 0.12s;position:relative}
+.cell:hover{background:var(--cell-hover)}
+.goal-p0{background:#e8c54710!important} .goal-p1{background:#e8474710!important}
+.goal-p2{background:#47b8e810!important} .goal-p3{background:#47e88810!important}
+.cell.move-hint{background:#5555ff22!important;cursor:pointer}
+.cell.move-hint::after{content:'';width:10px;height:10px;border-radius:50%;background:var(--accent);opacity:0.8}
+.hwall-slot,.vwall-slot{cursor:crosshair;border-radius:3px;transition:background 0.1s}
+.corner{background:#2a2a3a;border-radius:2px}
+.wp0{background:var(--p0)!important} .wp1{background:var(--p1)!important}
+.wp2{background:var(--p2)!important} .wp3{background:var(--p3)!important}
+.w-ok{background:#44cc8899!important;box-shadow:0 0 5px #44cc8860}
+.w-bad{background:#ff555566!important}
+.piece{border-radius:50%;position:absolute;pointer-events:none;
+  transition:all 0.18s cubic-bezier(0.34,1.56,0.64,1);box-shadow:0 3px 10px #00000080;
+  display:flex;align-items:center;justify-content:center;font-weight:900;color:#000;border:2px solid #fff8}
+
+/* confirm bar */
+.confirm-bar{display:none;align-items:center;gap:8px;margin-top:8px;
+  background:var(--surface);border:2px solid #333355;border-radius:12px;
+  padding:9px 14px;width:100%;max-width:600px;animation:su 0.2s ease}
+.confirm-bar.show{display:flex}
+@keyframes su{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+.cb-info{flex:1;font-size:12px;color:var(--muted);line-height:1.5}
+.cb-info b{color:var(--text)}
+.dir-badge{display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:700;margin-left:4px}
+.dir-h{background:#5555ff22;color:#8888ff;border:1px solid #5555ff44}
+.dir-v{background:#ff880022;color:#ffaa44;border:1px solid #ff880044}
+.btn-ok{padding:8px 18px;border-radius:20px;border:none;background:var(--green);color:#000;
+  font-family:'Noto Sans KR',sans-serif;font-size:12px;font-weight:900;cursor:pointer;
+  transition:all 0.15s;white-space:nowrap}
+.btn-ok:hover{transform:scale(1.05)}
+.btn-ok:disabled{background:#333355;color:var(--muted);cursor:not-allowed;transform:none}
+.btn-cx{padding:8px 12px;border-radius:20px;border:2px solid #333355;background:transparent;
+  color:var(--muted);font-family:'Noto Sans KR',sans-serif;font-size:12px;font-weight:700;
+  cursor:pointer;transition:all 0.15s;white-space:nowrap}
+.btn-cx:hover{color:var(--red);border-color:var(--red)}
+
+.status-bar{margin-top:8px;font-size:12px;color:var(--muted);text-align:center;min-height:16px;padding:0 6px}
+.my-turn-alert{color:var(--green)!important;font-weight:700}
+
+/* game controls */
+.game-controls{display:flex;gap:8px;margin-top:10px}
+.gcbtn{padding:8px 18px;border-radius:20px;border:none;font-family:'Noto Sans KR',sans-serif;
+  font-size:12px;font-weight:700;cursor:pointer;transition:all 0.2s}
+.gcbtn.primary{background:var(--accent);color:#fff}
+.gcbtn.secondary{background:var(--surface);color:var(--muted);border:2px solid #333355}
+.gcbtn.secondary:hover{color:var(--text);border-color:var(--muted)}
+
+/* connection badge */
+.conn-badge{display:inline-flex;align-items:center;gap:5px;
+  font-size:10px;color:var(--muted);margin-bottom:6px}
+.conn-dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+.conn-dot.offline{background:var(--red);animation:none}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+
+/* not-your-turn overlay */
+.not-turn-overlay{display:none;position:absolute;inset:0;border-radius:12px;
+  background:#00000020;z-index:10;align-items:center;justify-content:center;
+  font-size:12px;color:var(--muted);backdrop-filter:blur(1px)}
+.board-wrapper.locked .not-turn-overlay{display:flex}
+
+/* result overlay */
+.overlay{display:none;position:fixed;inset:0;background:#000000cc;backdrop-filter:blur(10px);
+  z-index:100;align-items:center;justify-content:center;flex-direction:column}
+.overlay.show{display:flex}
+.result-card{background:var(--surface);border-radius:20px;padding:30px 38px;text-align:center;
+  border:2px solid #333355;box-shadow:0 20px 60px #00000080;animation:pop 0.4s cubic-bezier(0.34,1.56,0.64,1);min-width:260px}
+@keyframes pop{from{transform:scale(0.7);opacity:0}to{transform:scale(1);opacity:1}}
+.result-title{font-family:'Bebas Neue',sans-serif;font-size:40px;letter-spacing:5px;margin-bottom:14px}
+.result-row{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:10px;
+  margin-bottom:5px;background:#ffffff08}
+.result-rank{font-family:'Bebas Neue',sans-serif;font-size:26px;width:30px;text-align:right}
+.result-dot{width:13px;height:13px;border-radius:50%;flex-shrink:0}
+.result-name{flex:1;text-align:left;font-weight:700;font-size:13px}
+.result-note{font-size:11px;color:var(--muted)}
+
+/* toast */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(60px);
+  background:#222233;border:1px solid #444466;border-radius:12px;padding:10px 20px;
+  font-size:13px;color:var(--text);box-shadow:0 6px 20px #00000060;z-index:200;
+  transition:transform 0.3s ease;white-space:nowrap}
+.toast.show{transform:translateX(-50%) translateY(0)}
+
+/* loading */
+.loading-screen{width:100%;max-width:420px;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:16px;min-height:200px;color:var(--muted)}
+.spinner{width:36px;height:36px;border:3px solid #333355;border-top-color:var(--accent);
+  border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<!-- 뒤로가기 버튼 -->
+<div class="back-nav">
+  <button class="back-nav-btn" onclick="goHome()">← 게임 목록으로</button>
+</div>
+
+<h1>QUORIDOR</h1>
+<p class="subtitle">쿼리도 · 온라인 멀티플레이</p>
+
+<!-- ── LOADING ── -->
+<div class="loading-screen" id="loadingScreen">
+  <div class="spinner"></div>
+  <span>방에 연결하는 중...</span>
+</div>
+
+<!-- ── WAITING SCREEN ── -->
+<div class="screen" id="waitScreen">
+  <div class="card">
+    <h2>🕐 대기실 — <span id="waitMode"></span></h2>
+    <div class="room-code-box">
+      <div class="room-code" id="waitCode">----</div>
+      <div class="room-code-hint">이 코드를 친구에게 공유하세요</div>
+    </div>
+    <div class="waiting-list" id="waitingList"></div>
+    <button class="btn-full primary" id="startBtn" onclick="startGame()" disabled>게임 시작</button>
+    <button class="btn-full secondary" onclick="leaveRoom()">나가기</button>
+  </div>
+</div>
+
+<!-- ── GAME SCREEN ── -->
+<div class="screen" id="gameScreen">
+  <div class="conn-badge">
+    <div class="conn-dot" id="connDot"></div>
+    <span id="connLabel">연결됨</span>
+    <span style="margin-left:8px;opacity:0.5">방 코드: <b id="gameCode"></b></span>
+  </div>
+
+  <div id="playerArea"></div>
+
+  <div class="action-bar">
+    <button class="act-btn on" id="btn-move" onclick="setMode('move')">이동</button>
+    <button class="act-btn"   id="btn-wall" onclick="setMode('wall')">벽 설치</button>
+  </div>
+
+  <div class="board-wrapper" id="boardWrapper">
+    <div class="board" id="board"></div>
+    <div class="not-turn-overlay" id="notTurnOverlay">상대방의 차례입니다...</div>
+  </div>
+
+  <div class="confirm-bar" id="confirmBar">
+    <div class="cb-info" id="cbInfo">벽 슬롯을 클릭하거나 드래그하세요</div>
+    <button class="btn-cx" onclick="cancelWall()">취소</button>
+    <button class="btn-ok" id="btnOk" onclick="confirmWall()" disabled>설치 OK</button>
+  </div>
+
+  <div class="status-bar" id="status"></div>
+
+  <div class="game-controls">
+    <button class="gcbtn secondary" onclick="leaveRoom()">← 로비</button>
+  </div>
+</div>
+
+<!-- Result overlay -->
+<div class="overlay" id="overlay">
+  <div class="result-card">
+    <div class="result-title">최종 순위</div>
+    <div id="resultRows"></div>
+    <br>
+    <button class="btn-full primary" onclick="goHome()">게임 목록으로</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Firebase SDK -->
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import {
+  getDatabase, ref, set, get, update, onValue, push, remove, serverTimestamp
+} from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+
+// ═══════════════════════════════════════════════════
+// 🔥 FIREBASE CONFIG — playingwithfriend 프로젝트
+// ═══════════════════════════════════════════════════
+const firebaseConfig = {
+  apiKey: "AIzaSyAsZMn2WA4jQjyT_C9JXeNy95isET75FzM",
+  authDomain: "playingwithfriend-5628d.firebaseapp.com",
+  databaseURL: "https://playingwithfriend-5628d-default-rtdb.firebaseio.com",
+  projectId: "playingwithfriend-5628d",
+  storageBucket: "playingwithfriend-5628d.firebasestorage.app",
+  messagingSenderId: "127477048637",
+  appId: "1:127477048637:web:11240af56c8b89b9a7d154"
+};
+const app = initializeApp(firebaseConfig);
+const db  = getDatabase(app);
+
+// ═══════════════════════════════════════════════════
+// CONSTANTS
+// ═══════════════════════════════════════════════════
+const COLORS      = ['#e8c547','#e84747','#47b8e8','#47e888'];
+const RANK_EMOJIS = ['🥇','🥈','🥉','4️⃣'];
+const RANK_COLORS = ['gold','silver','#cd7f32','#666688'];
+
+// ═══════════════════════════════════════════════════
+// SESSION
+// ═══════════════════════════════════════════════════
+let myId       = 'U' + Math.random().toString(36).slice(2,9).toUpperCase();
+let myNick     = sessionStorage.getItem('pwf-nickname') || '익명';
+let roomCode   = '';
+let mySlot     = -1;
+let playerCount= 2;
+let roomRef    = null;
+let unsubRoom  = null;
+
+// ═══════════════════════════════════════════════════
+// LOCAL UI STATE
+// ═══════════════════════════════════════════════════
+let localState = {
+  mode: 'move',
+  pending: null, pendingValid: false,
+  hoverWall: null,
+  drag: { active:false, startR:0,startC:0,startDir:'h',startX:0,startY:0 }
+};
+
+// ═══════════════════════════════════════════════════
+// REMOTE GAME STATE
+// ═══════════════════════════════════════════════════
+let gstate = null;
+
+// ═══════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════
+function getGrid() { return playerCount===4?11:9; }
+
+function toast(msg, dur=2500) {
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), dur);
+}
+
+function showScreen(id) {
+  document.getElementById('loadingScreen').style.display='none';
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  const el = document.getElementById(id);
+  if (el) el.classList.add('active');
+}
+
+function isMyTurn() {
+  return gstate && !gstate.gameOver && gstate.turn===mySlot;
+}
+
+function goalCheck(p, pos) {
+  const G=getGrid();
+  if (playerCount===2) return p===0?pos[0]===G-1:pos[0]===0;
+  if(p===0) return pos[0]===0;
+  if(p===1) return pos[0]===G-1;
+  if(p===2) return pos[1]===0;
+  if(p===3) return pos[1]===G-1;
+}
+
+function makeFreshGame(pCount) {
+  const G = pCount===4?11:9, W=pCount===4?5:10;
+  const pos = [], m=Math.floor(G/2);
+  for(let p=0;p<pCount;p++) {
+    if(pCount===2) pos.push(p===0?[0,m]:[G-1,m]);
+    else {
+      const map=[[G-1,m],[0,m],[m,G-1],[m,0]];
+      pos.push(map[p]);
+    }
+  }
+  return {
+    pos, walls:Array(pCount).fill(W),
+    placedWalls:[], eliminated:[], turn:0, gameOver:false, playerCount:pCount
+  };
+}
+
+// ═══════════════════════════════════════════════════
+// 뒤로가기
+// ═══════════════════════════════════════════════════
+window.goHome = function() {
+  if (unsubRoom) { unsubRoom(); unsubRoom=null; }
+  if (roomRef && mySlot >= 0) {
+    update(ref(db, `games/quoriko/${roomCode}/players/${mySlot}`), {online:false}).catch(()=>{});
+  }
+  window.location.href = '/';
+};
+
+// ═══════════════════════════════════════════════════
+// INIT FROM URL PARAMS
+// ═══════════════════════════════════════════════════
+(async function init() {
+  const params = new URLSearchParams(location.search);
+  const roomParam   = params.get('room');
+  const playersParam = parseInt(params.get('players') || '2');
+  const isHost       = params.get('host') === 'true';
+
+  if (!roomParam) {
+    window.location.href = '/';
+    return;
+  }
+
+  roomCode    = roomParam.toUpperCase();
+  playerCount = playersParam;
+  roomRef     = ref(db, `games/quoriko/${roomCode}`);
+
+  if (isHost) {
+    // 방 생성
+    mySlot = 0;
+    const roomData = {
+      code: roomCode,
+      playerCount,
+      status: 'waiting',
+      players: {
+        0: { id:myId, nick:myNick, slot:0, online:true }
+      },
+      createdAt: serverTimestamp()
+    };
+    try {
+      await set(roomRef, roomData);
+    } catch(e) {
+      toast('방 생성 실패: ' + e.message);
+      return;
+    }
+  } else {
+    // 방 참가
+    const snap = await get(roomRef);
+    if (!snap.exists()) { toast('존재하지 않는 방입니다'); setTimeout(goHome, 2000); return; }
+
+    const room = snap.val();
+    if (room.status !== 'waiting') {
+      // 이미 게임 중이면 관전(재접속)으로 진입 허용
+      playerCount = room.playerCount || 2;
+    }
+
+    const players = room.players || {};
+    // 이전에 같은 myId로 들어온 슬롯 찾기 (재접속)
+    const existingSlot = Object.entries(players).find(([,p])=>p.id===myId);
+    if (existingSlot) {
+      mySlot = parseInt(existingSlot[0]);
+      await update(ref(db, `games/quoriko/${roomCode}/players/${mySlot}`), {online:true});
+    } else {
+      if (room.status !== 'waiting') { toast('이미 게임이 시작된 방입니다'); setTimeout(goHome, 2000); return; }
+      const slots = Object.keys(players).map(Number);
+      const maxSlot = room.playerCount;
+      if (slots.length >= maxSlot) { toast('방이 꽉 찼습니다'); setTimeout(goHome, 2000); return; }
+      let slot = -1;
+      for (let i=0;i<maxSlot;i++) { if (!players[i]) { slot=i; break; } }
+      if (slot===-1) { toast('빈 자리가 없습니다'); setTimeout(goHome, 2000); return; }
+      mySlot = slot;
+      playerCount = room.playerCount;
+      await update(ref(db, `games/quoriko/${roomCode}/players`), {
+        [slot]: { id:myId, nick:myNick, slot, online:true }
+      });
+    }
+  }
+
+  subscribeRoom();
+})();
+
+// ═══════════════════════════════════════════════════
+// WAIT SCREEN
+// ═══════════════════════════════════════════════════
+function showWaitScreen() {
+  document.getElementById('waitCode').textContent = roomCode;
+  document.getElementById('waitMode').textContent = playerCount+'인';
+  showScreen('waitScreen');
+}
+
+function renderWaitingList(players) {
+  const list = document.getElementById('waitingList');
+  list.innerHTML='';
+  const n = playerCount;
+  for (let i=0;i<n;i++) {
+    const p = players?.[i];
+    const div=document.createElement('div');
+    div.className='waiting-slot'+(p?' filled':'');
+    const isMe = p && p.id===myId;
+    div.innerHTML=`
+      <div class="slot-dot" style="background:${COLORS[i]}${p?'':'44'}"></div>
+      <div class="slot-name" style="color:${p?COLORS[i]:COLORS[i]+'44'}">${p?p.nick:'( 대기 중... )'}</div>
+      ${p?`<div class="slot-tag ${isMe?'slot-me':''}">${isMe?'나':'참가'}</div>`:''}`;
+    list.appendChild(div);
+  }
+  const filled = Object.keys(players||{}).length;
+  const startBtn=document.getElementById('startBtn');
+  startBtn.disabled = !(mySlot===0 && filled===n);
+  if (mySlot===0 && filled===n)
+    startBtn.textContent = '▶ 게임 시작!';
+  else if (mySlot===0)
+    startBtn.textContent = `게임 시작 (${filled}/${n}명 대기 중)`;
+  else
+    startBtn.textContent = '방장이 시작하길 기다리는 중...';
+}
+
+window.startGame = async () => {
+  if (mySlot!==0) return;
+  const snap=await get(roomRef);
+  const room=snap.val();
+  const filled=Object.keys(room.players||{}).length;
+  if (filled!==room.playerCount) { toast('모든 플레이어가 참가해야 합니다'); return; }
+  const freshGame=makeFreshGame(room.playerCount);
+  await update(roomRef, { status:'playing', game: freshGame });
+};
+
+window.leaveRoom = async () => {
+  if (unsubRoom) { unsubRoom(); unsubRoom=null; }
+  if (roomRef && mySlot >= 0) {
+    await update(ref(db, `games/quoriko/${roomCode}/players/${mySlot}`), {online:false}).catch(()=>{});
+  }
+  gstate=null; localState.mode='move'; localState.pending=null;
+  document.getElementById('overlay').classList.remove('show');
+  window.location.href = '/';
+};
+
+// ═══════════════════════════════════════════════════
+// FIREBASE SUBSCRIPTION
+// ═══════════════════════════════════════════════════
+function subscribeRoom() {
+  if (unsubRoom) unsubRoom();
+  unsubRoom = onValue(roomRef, snap => {
+    if (!snap.exists()) { toast('방이 삭제됐습니다'); setTimeout(goHome, 1500); return; }
+    const room=snap.val();
+    playerCount=room.playerCount||2;
+
+    if (room.status==='waiting') {
+      renderWaitingList(room.players);
+      showWaitScreen();
+    } else if (room.status==='playing' && room.game) {
+      if (!document.getElementById('gameScreen').classList.contains('active')) {
+        enterGameScreen(room);
+      }
+      gstate = deserializeGame(room.game);
+      renderGame();
+    }
+  });
+}
+
+function deserializeGame(g) {
+  return {
+    pos:         Object.values(g.pos||{}).map(v=>Object.values(v).map(Number)),
+    walls:       Object.values(g.walls||{}),
+    placedWalls: g.placedWalls ? Object.values(g.placedWalls) : [],
+    eliminated:  g.eliminated  ? Object.values(g.eliminated)  : [],
+    turn:        g.turn||0,
+    gameOver:    g.gameOver||false,
+    playerCount: g.playerCount||2,
+  };
+}
+
+function enterGameScreen(room) {
+  document.getElementById('gameCode').textContent = roomCode;
+  buildPlayerArea(room.players);
+  buildBoard();
+  localState.mode='move'; localState.pending=null; localState.hoverWall=null;
+  showScreen('gameScreen');
+}
+
+// ═══════════════════════════════════════════════════
+// PUSH MOVE TO FIREBASE
+// ═══════════════════════════════════════════════════
+async function pushState(newG) {
+  const serial = {
+    pos:         newG.pos.map(p=>({0:p[0],1:p[1]})),
+    walls:       newG.walls.reduce((o,v,i)=>{o[i]=v;return o},{}),
+    placedWalls: newG.placedWalls.reduce((o,w,i)=>{o[i]=w;return o},{}),
+    eliminated:  newG.eliminated.reduce((o,v,i)=>{o[i]=v;return o},{}),
+    turn:        newG.turn,
+    gameOver:    newG.gameOver,
+    playerCount: newG.playerCount||playerCount,
+  };
+  await update(roomRef, { game: serial });
+}
+
+// ═══════════════════════════════════════════════════
+// GAME LOGIC
+// ═══════════════════════════════════════════════════
+function inBounds(r,c){const G=getGrid();return r>=0&&r<G&&c>=0&&c<G}
+
+function isBlockedBetween(walls,r1,c1,r2,c2){
+  const dr=r2-r1,dc=c2-c1;
+  if(dr===1 &&dc===0) return walls.some(w=>w.dir==='h'&&w.r===r1&&(w.c===c1||w.c===c1-1));
+  if(dr===-1&&dc===0) return walls.some(w=>w.dir==='h'&&w.r===r2&&(w.c===c1||w.c===c1-1));
+  if(dr===0 &&dc===1) return walls.some(w=>w.dir==='v'&&w.c===c1&&(w.r===r1||w.r===r1-1));
+  if(dr===0 &&dc===-1)return walls.some(w=>w.dir==='v'&&w.c===c2&&(w.r===r1||w.r===r1-1));
+  return false;
+}
+
+function getLegalMoves(g, player) {
+  const [r,c]=g.pos[player], n=g.playerCount||playerCount;
+  const moves=[], dirs=[[-1,0],[1,0],[0,-1],[0,1]];
+  for(const [dr,dc] of dirs){
+    const nr=r+dr,nc=c+dc;
+    if(!inBounds(nr,nc)) continue;
+    if(isBlockedBetween(g.placedWalls,r,c,nr,nc)) continue;
+    const occ=g.pos.findIndex((p,i)=>i!==player&&!g.eliminated.includes(i)&&p[0]===nr&&p[1]===nc);
+    if(occ===-1){ moves.push([nr,nc]); }
+    else {
+      const jr=nr+dr,jc=nc+dc;
+      const stBlocked=!inBounds(jr,jc)||isBlockedBetween(g.placedWalls,nr,nc,jr,jc);
+      const pAtJ=inBounds(jr,jc)&&g.pos.some((p,i)=>i!==player&&!g.eliminated.includes(i)&&p[0]===jr&&p[1]===jc);
+      if(!stBlocked&&!pAtJ){ moves.push([jr,jc]); }
+      else {
+        for(const [ddr,ddc] of dirs){
+          if(ddr===dr&&ddc===dc) continue;
+          if(ddr===-dr&&ddc===-dc) continue;
+          const sr=nr+ddr,sc=nc+ddc;
+          if(inBounds(sr,sc)&&!isBlockedBetween(g.placedWalls,nr,nc,sr,sc)){
+            const pAtS=g.pos.some((p,i)=>i!==player&&!g.eliminated.includes(i)&&p[0]===sr&&p[1]===sc);
+            if(!pAtS) moves.push([sr,sc]);
+          }
+        }
+      }
+    }
+  }
+  return moves;
+}
+
+function bfsOk(g, player) {
+  const [sr,sc]=g.pos[player], G=getGrid();
+  const visited=new Set([`${sr},${sc}`]), queue=[[sr,sc]];
+  const dirs=[[-1,0],[1,0],[0,-1],[0,1]];
+  while(queue.length){
+    const [r,c]=queue.shift();
+    if(goalCheck(player,[r,c])) return true;
+    for(const [dr,dc] of dirs){
+      const nr=r+dr,nc=c+dc;
+      if(!inBounds(nr,nc)||isBlockedBetween(g.placedWalls,r,c,nr,nc)) continue;
+      const key=`${nr},${nc}`;
+      if(!visited.has(key)){visited.add(key);queue.push([nr,nc]);}
+    }
+  }
+  return false;
+}
+
+function snapWall(wr,wc,dir){
+  const G=getGrid();
+  let r=wr,c=wc;
+  if(dir==='h'){if(c>=G-1)c=G-2;}else{if(r>=G-1)r=G-2;}
+  if(r<0)r=0;if(c<0)c=0;
+  return{r,c,dir};
+}
+
+function canPlaceWall(g, wr,wc,dir){
+  const G=getGrid();
+  if(!g||g.walls[g.turn]<=0) return false;
+  if(wr<0||wc<0||wr>=G-1||wc>=G-1) return false;
+  const ws=g.placedWalls;
+  for(const w of ws){
+    if(w.dir===dir&&w.r===wr&&w.c===wc) return false;
+    if(dir==='h'&&w.dir==='h'&&w.r===wr&&(w.c===wc-1||w.c===wc+1)) return false;
+    if(dir==='v'&&w.dir==='v'&&w.c===wc&&(w.r===wr-1||w.r===wr+1)) return false;
+    if(dir==='h'&&w.dir==='v'&&w.r===wr&&w.c===wc) return false;
+    if(dir==='v'&&w.dir==='h'&&w.r===wr&&w.c===wc) return false;
+  }
+  const gCopy={...g, placedWalls:[...ws,{r:wr,c:wc,dir,player:g.turn}]};
+  const n=g.playerCount||playerCount;
+  for(let p=0;p<n;p++){
+    if(g.eliminated.includes(p)) continue;
+    if(!bfsOk(gCopy,p)) return false;
+  }
+  return true;
+}
+
+function advanceTurn(g) {
+  const n=g.playerCount||playerCount;
+  let next=(g.turn+1)%n, tries=0;
+  while(g.eliminated.includes(next)&&tries<n){next=(next+1)%n;tries++;}
+  return next;
+}
+
+function applyCheckWin(g) {
+  const p=g.turn, n=g.playerCount||playerCount;
+  if(goalCheck(p,g.pos[p])&&!g.eliminated.includes(p)){
+    g.eliminated.push(p);
+    if(g.eliminated.length>=n-1){
+      for(let i=0;i<n;i++) if(!g.eliminated.includes(i)) g.eliminated.push(i);
+      g.gameOver=true;
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// ACTIONS
+// ═══════════════════════════════════════════════════
+async function doMove(r,c) {
+  if(!isMyTurn()) return;
+  const g=JSON.parse(JSON.stringify(gstate));
+  if(!getLegalMoves(g,mySlot).some(([mr,mc])=>mr===r&&mc===c)) return;
+  g.pos[mySlot]=[r,c];
+  applyCheckWin(g);
+  if(!g.gameOver) g.turn=advanceTurn(g);
+  await pushState(g);
+  localState.mode='move'; localState.pending=null;
+}
+
+async function doWall(wr,wc,dir) {
+  if(!isMyTurn()) return;
+  const g=JSON.parse(JSON.stringify(gstate));
+  if(!canPlaceWall(g,wr,wc,dir)) return;
+  g.placedWalls.push({r:wr,c:wc,dir,player:mySlot});
+  g.walls[mySlot]--;
+  g.turn=advanceTurn(g);
+  await pushState(g);
+  localState.mode='move'; localState.pending=null; localState.hoverWall=null;
+}
+
+// ═══════════════════════════════════════════════════
+// BUILD BOARD DOM
+// ═══════════════════════════════════════════════════
+function buildBoard() {
+  const G=getGrid(), SLOTS=G*2-1;
+  const cellSize=Math.min(36,Math.floor((Math.min(window.innerWidth-60,520))/(G+(G-1)*0.15)));
+  const gapPx=Math.max(4,Math.floor(cellSize*0.14));
+  const board=document.getElementById('board');
+  board.innerHTML='';
+  board.style.gridTemplateColumns=`repeat(${SLOTS},auto)`;
+  board.style.gridTemplateRows=`repeat(${SLOTS},auto)`;
+  for(let gr=0;gr<SLOTS;gr++){
+    for(let gc=0;gc<SLOTS;gc++){
+      const isCell=gr%2===0&&gc%2===0, isCorner=gr%2===1&&gc%2===1;
+      const isHWall=gr%2===1&&gc%2===0, isVWall=gr%2===0&&gc%2===1;
+      const el=document.createElement('div');
+      if(isCell){
+        const r=gr/2,c=gc/2;
+        el.className='cell'; el.style.width=el.style.height=cellSize+'px';
+        el.style.fontSize=Math.floor(cellSize*0.22)+'px';
+        el.dataset.r=r; el.dataset.c=c;
+        markGoals(el,r,c,G);
+        el.addEventListener('click',onCellClick);
+      } else if(isCorner){
+        el.className='corner'; el.style.width=el.style.height=gapPx+'px';
+        el.dataset.cr=(gr-1)/2; el.dataset.cc=(gc-1)/2;
+      } else if(isHWall){
+        el.className='hwall-slot'; el.style.width=cellSize+'px'; el.style.height=gapPx+'px';
+        el.dataset.wr=(gr-1)/2; el.dataset.wc=gc/2; el.dataset.wdir='h';
+        addWallListeners(el);
+      } else if(isVWall){
+        el.className='vwall-slot'; el.style.width=gapPx+'px'; el.style.height=cellSize+'px';
+        el.dataset.wr=gr/2; el.dataset.wc=(gc-1)/2; el.dataset.wdir='v';
+        addWallListeners(el);
+      }
+      board.appendChild(el);
+    }
+  }
+}
+
+function markGoals(el,r,c,G){
+  if(playerCount===2){if(r===G-1)el.classList.add('goal-p0');if(r===0)el.classList.add('goal-p1');return;}
+  if(r===0)el.classList.add('goal-p0');if(r===G-1)el.classList.add('goal-p1');
+  if(c===0)el.classList.add('goal-p2');if(c===G-1)el.classList.add('goal-p3');
+}
+
+function buildPlayerArea(players) {
+  const area=document.getElementById('playerArea');
+  const n=playerCount;
+  area.className=n===2?'players-row':'players-grid';
+  area.innerHTML='';
+  for(let p=0;p<n;p++){
+    const nick=players?.[p]?.nick||`P${p+1}`;
+    const div=document.createElement('div');
+    div.className=`pcard p${p}`;
+    div.id=`pcard${p}`;
+    div.innerHTML=`
+      <div class="pcard-name"><span style="color:${COLORS[p]}">■</span> ${nick}${p===mySlot?' (나)':''}</div>
+      <div class="pcard-walls" id="pwalls${p}">- <span>개</span></div>
+      <div class="pcard-sub" id="psub${p}"></div>
+      <div class="rank-badge" id="prank${p}"></div>`;
+    area.appendChild(div);
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════════
+function renderGame() {
+  if(!gstate) return;
+  const g=gstate, s=localState, G=getGrid(), n=g.playerCount||playerCount;
+  const cellSize=parseInt(document.querySelector('.cell')?.style.width||'36');
+  const myTurn=isMyTurn();
+
+  document.getElementById('boardWrapper').classList.toggle('locked',!myTurn||g.gameOver);
+
+  document.querySelectorAll('.piece').forEach(e=>e.remove());
+  for(let p=0;p<n;p++){
+    const cell=getCell(...g.pos[p]); if(!cell) continue;
+    const piece=document.createElement('div');
+    piece.className='piece';
+    const sz=Math.max(14,cellSize-10);
+    piece.style.cssText=`width:${sz}px;height:${sz}px;background:radial-gradient(circle at 35% 35%,#fff8,${COLORS[p]});font-size:${Math.floor(sz*0.35)}px;`;
+    piece.textContent=p+1; cell.appendChild(piece);
+  }
+
+  document.querySelectorAll('.move-hint').forEach(e=>e.classList.remove('move-hint'));
+  if(myTurn&&!g.gameOver&&s.mode==='move'){
+    getLegalMoves(g,mySlot).forEach(([r,c])=>getCell(r,c)?.classList.add('move-hint'));
+  }
+
+  document.querySelectorAll('.wp0,.wp1,.wp2,.wp3,.w-ok,.w-bad')
+    .forEach(e=>e.classList.remove('wp0','wp1','wp2','wp3','w-ok','w-bad'));
+
+  g.placedWalls.forEach(w=>paintWall(w.r,w.c,w.dir,`wp${w.player}`));
+
+  if(!s.pending&&s.hoverWall&&s.mode==='wall'&&myTurn&&!g.gameOver)
+    paintWall(s.hoverWall.r,s.hoverWall.c,s.hoverWall.dir,s.hoverWall.valid?'w-ok':'w-bad');
+  if(s.pending&&s.mode==='wall'&&myTurn&&!g.gameOver)
+    paintWall(s.pending.r,s.pending.c,s.pending.dir,s.pendingValid?'w-ok':'w-bad');
+
+  for(let p=0;p<n;p++){
+    const card=document.getElementById(`pcard${p}`); if(!card) continue;
+    card.classList.toggle('active',g.turn===p&&!g.gameOver);
+    card.classList.toggle('eliminated',g.eliminated.includes(p));
+    document.getElementById(`pwalls${p}`).innerHTML=`${g.walls[p]} <span>개 남음</span>`;
+    const ri=g.eliminated.indexOf(p);
+    const rankEl=document.getElementById(`prank${p}`);
+    if(ri!==-1){
+      rankEl.textContent=RANK_EMOJIS[ri];
+      rankEl.style.color=RANK_COLORS[ri];
+      document.getElementById(`psub${p}`).textContent=`${ri+1}등 완주!`;
+    } else {
+      rankEl.textContent='';
+      const isActive=g.turn===p&&!g.gameOver;
+      document.getElementById(`psub${p}`).textContent=isActive?(p===mySlot?'◀ 내 차례':'◀ 차례'):'';
+    }
+  }
+
+  const canWall=myTurn&&!g.gameOver&&g.walls[mySlot]>0;
+  document.getElementById('btn-move').classList.toggle('on',s.mode==='move');
+  document.getElementById('btn-wall').classList.toggle('on',s.mode==='wall');
+  document.getElementById('btn-wall').disabled=!canWall;
+
+  const bar=document.getElementById('confirmBar');
+  const btnOk=document.getElementById('btnOk');
+  const cbInfo=document.getElementById('cbInfo');
+  if(s.mode==='wall'&&myTurn&&!g.gameOver){
+    bar.classList.add('show');
+    if(s.pending){
+      const dl=s.pending.dir==='h'?'<span class="dir-badge dir-h">━ 가로벽</span>':'<span class="dir-badge dir-v">┃ 세로벽</span>';
+      const vt=s.pendingValid?`<b style="color:var(--green)">✓ 설치 가능 — OK 확정</b>`:`<b style="color:var(--red)">✗ 설치 불가</b>`;
+      cbInfo.innerHTML=`위치 고정 ${dl} &nbsp;${vt}`; btnOk.disabled=!s.pendingValid;
+    } else if(s.hoverWall){
+      const dl=s.hoverWall.dir==='h'?'<span class="dir-badge dir-h">━ 가로벽</span>':'<span class="dir-badge dir-v">┃ 세로벽</span>';
+      cbInfo.innerHTML=`미리보기 ${dl} — <b>클릭하면 위치 고정</b>`; btnOk.disabled=true;
+    } else {
+      cbInfo.innerHTML='벽 슬롯을 <b>클릭</b>하거나 <b>드래그</b>해서 방향 선택'; btnOk.disabled=true;
+    }
+  } else { bar.classList.remove('show'); }
+
+  const statusEl=document.getElementById('status');
+  if(g.gameOver){ statusEl.textContent='게임 종료!'; showResults(g); }
+  else if(myTurn){
+    statusEl.className='status-bar my-turn-alert';
+    statusEl.textContent=s.mode==='move'?'내 차례 — 이동할 칸 클릭':'내 차례 — 드래그로 방향 결정 → OK';
+  } else {
+    statusEl.className='status-bar';
+    const nick=document.getElementById(`pcard${g.turn}`)?.querySelector('.pcard-name')?.textContent||'';
+    statusEl.textContent=`${nick}의 차례...`;
+  }
+}
+
+function showResults(g) {
+  if(document.getElementById('overlay').classList.contains('show')) return;
+  const rows=document.getElementById('resultRows');
+  rows.innerHTML='';
+  (g.eliminated||[]).forEach((p,i)=>{
+    const div=document.createElement('div');
+    div.className='result-row';
+    const nick=document.getElementById(`pcard${p}`)?.querySelector('.pcard-name')?.textContent||`P${p+1}`;
+    div.innerHTML=`
+      <div class="result-rank" style="color:${RANK_COLORS[i]}">${RANK_EMOJIS[i]}</div>
+      <div class="result-dot" style="background:${COLORS[p]}"></div>
+      <div class="result-name">${nick}</div>
+      <div class="result-note">${i===0?'🏆 우승':i+1+'등'}</div>`;
+    rows.appendChild(div);
+  });
+  setTimeout(()=>document.getElementById('overlay').classList.add('show'),600);
+}
+
+// ═══════════════════════════════════════════════════
+// DOM HELPERS
+// ═══════════════════════════════════════════════════
+function getCell(r,c){return document.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`)}
+function getHWall(wr,wc){return document.querySelector(`.hwall-slot[data-wr="${wr}"][data-wc="${wc}"]`)}
+function getVWall(wr,wc){return document.querySelector(`.vwall-slot[data-wr="${wr}"][data-wc="${wc}"]`)}
+function getCornerEl(wr,wc){
+  const G=getGrid(),SLOTS=G*2-1;
+  return document.getElementById('board').children[(wr*2+1)*SLOTS+(wc*2+1)]||null;
+}
+function paintWall(wr,wc,dir,cls){
+  const G=getGrid();
+  if(dir==='h'){
+    getHWall(wr,wc)?.classList.add(cls);
+    if(wc+1<G)getHWall(wr,wc+1)?.classList.add(cls);
+    getCornerEl(wr,wc)?.classList.add(cls);
+  } else {
+    getVWall(wr,wc)?.classList.add(cls);
+    if(wr+1<G)getVWall(wr+1,wc)?.classList.add(cls);
+    getCornerEl(wr,wc)?.classList.add(cls);
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// WALL DRAG & HOVER
+// ═══════════════════════════════════════════════════
+function addWallListeners(el){
+  el.addEventListener('mousedown',onWallMouseDown);
+  el.addEventListener('mouseenter',onWallMouseEnter);
+  el.addEventListener('touchstart',onWallTouchStart,{passive:false});
+  el.addEventListener('touchmove',onWallTouchMove,{passive:false});
+  el.addEventListener('touchend',onWallTouchEnd,{passive:false});
+}
+
+function lockPending(wr,wc,dir){
+  if(!isMyTurn()||localState.mode!=='wall') return;
+  const{r,c}=snapWall(wr,wc,dir);
+  localState.pending={r,c,dir};
+  localState.pendingValid=canPlaceWall(gstate,r,c,dir);
+  localState.hoverWall=null;
+  renderGame();
+}
+function setHover(wr,wc,dir){
+  if(!isMyTurn()||localState.mode!=='wall'||localState.pending) return;
+  const{r,c}=snapWall(wr,wc,dir);
+  localState.hoverWall={r,c,dir,valid:canPlaceWall(gstate,r,c,dir)};
+  renderGame();
+}
+function clearHover(){if(localState.hoverWall){localState.hoverWall=null;renderGame();}}
+
+let mouseDownActive=false;
+function onWallMouseDown(e){
+  if(!isMyTurn()||localState.mode!=='wall') return;
+  e.preventDefault(); mouseDownActive=true;
+  const d=localState.drag;
+  d.active=true;
+  d.startR=parseInt(e.currentTarget.dataset.wr); d.startC=parseInt(e.currentTarget.dataset.wc);
+  d.startDir=e.currentTarget.dataset.wdir; d.startX=e.clientX; d.startY=e.clientY;
+  lockPending(d.startR,d.startC,d.startDir);
+}
+document.addEventListener('mousemove',e=>{
+  if(!mouseDownActive||!localState.drag.active||!isMyTurn()) return;
+  const d=localState.drag;
+  const dx=Math.abs(e.clientX-d.startX),dy=Math.abs(e.clientY-d.startY);
+  if(dx<6&&dy<6) return;
+  lockPending(d.startR,d.startC,dx>=dy?'h':'v');
+});
+document.addEventListener('mouseup',()=>{mouseDownActive=false;localState.drag.active=false;});
+function onWallMouseEnter(e){
+  if(!isMyTurn()||localState.mode!=='wall'||mouseDownActive) return;
+  setHover(parseInt(e.currentTarget.dataset.wr),parseInt(e.currentTarget.dataset.wc),e.currentTarget.dataset.wdir);
+}
+document.getElementById('boardWrapper').addEventListener('mouseleave',clearHover);
+function onWallTouchStart(e){
+  if(!isMyTurn()||localState.mode!=='wall') return;
+  e.preventDefault();
+  const t=e.touches[0],d=localState.drag;
+  d.active=true;
+  d.startR=parseInt(e.currentTarget.dataset.wr); d.startC=parseInt(e.currentTarget.dataset.wc);
+  d.startDir=e.currentTarget.dataset.wdir; d.startX=t.clientX; d.startY=t.clientY;
+  lockPending(d.startR,d.startC,d.startDir);
+}
+function onWallTouchMove(e){
+  if(!localState.drag.active||!isMyTurn()) return;
+  e.preventDefault();
+  const t=e.touches[0],d=localState.drag;
+  const dx=Math.abs(t.clientX-d.startX),dy=Math.abs(t.clientY-d.startY);
+  if(dx<6&&dy<6) return;
+  lockPending(d.startR,d.startC,dx>=dy?'h':'v');
+}
+function onWallTouchEnd(e){e.preventDefault();localState.drag.active=false;}
+
+// ═══════════════════════════════════════════════════
+// CELL / WALL ACTIONS
+// ═══════════════════════════════════════════════════
+function onCellClick(e){
+  if(!isMyTurn()||localState.mode!=='move'||!gstate||gstate.gameOver) return;
+  const r=parseInt(e.currentTarget.dataset.r),c=parseInt(e.currentTarget.dataset.c);
+  doMove(r,c);
+}
+
+window.confirmWall=function(){
+  const p=localState.pending;
+  if(!p||!localState.pendingValid||!isMyTurn()) return;
+  doWall(p.r,p.c,p.dir);
+};
+window.cancelWall=function(){
+  localState.pending=null; localState.pendingValid=false; localState.hoverWall=null;
+  renderGame();
+};
+window.setMode=function(m){
+  if(!isMyTurn()) return;
+  localState.mode=m; localState.pending=null; localState.pendingValid=false; localState.hoverWall=null;
+  renderGame();
+};
+
+// ═══════════════════════════════════════════════════
+// CONNECTION INDICATOR
+// ═══════════════════════════════════════════════════
+const connectedRef=ref(db,'.info/connected');
+onValue(connectedRef,snap=>{
+  const online=snap.val()===true;
+  document.getElementById('connDot').classList.toggle('offline',!online);
+  document.getElementById('connLabel').textContent=online?'연결됨':'연결 끊김';
+});
+</script>
+</body>
+</html>
