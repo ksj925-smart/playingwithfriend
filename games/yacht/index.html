@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🛥️ YACHT — PlayingwithFriend</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', sans-serif;
+    background: linear-gradient(160deg, #0a1628, #1a3a5c, #0d2540);
+    min-height: 100vh;
+    color: #fff;
+  }
+
+  /* 뒤로가기 */
+  .back-nav {
+    position: fixed; top: 0; left: 0; right: 0;
+    padding: 10px 16px; z-index: 300;
+    display: flex; align-items: center;
+  }
+  .back-nav-btn {
+    background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 8px; color: rgba(255,255,255,0.8);
+    font-size: 13px; padding: 6px 12px; cursor: pointer;
+    display: flex; align-items: center; gap: 5px;
+    transition: background .2s;
+  }
+  .back-nav-btn:hover { background: rgba(255,255,255,0.18); }
+
+  /* ── SCREENS ── */
+  .screen { display: none; }
+  .screen.active { display: flex; }
+
+  /* ── SETUP ── */
+  #setup-screen {
+    min-height: 100vh;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px 20px;
+  }
+  .setup-card {
+    background: rgba(255,255,255,0.07);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 24px;
+    padding: 36px 32px;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: 0 30px 80px #0008;
+    text-align: center;
+  }
+  .setup-title { font-size: 48px; margin-bottom: 6px; }
+  .setup-h1 { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 4px; }
+  .setup-sub { color: rgba(255,255,255,0.45); font-size: 13px; margin-bottom: 6px; }
+  .setup-code {
+    display: inline-block; background: rgba(255,255,255,0.08);
+    border: 1px dashed rgba(255,255,255,0.3); border-radius: 10px;
+    padding: 4px 16px; font-size: 20px; font-weight: 800;
+    letter-spacing: 5px; color: #64b5f6; margin-bottom: 24px;
+  }
+  .player-row {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+  }
+  .player-num {
+    width: 32px; height: 32px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 700; flex-shrink: 0; color: #fff;
+  }
+  .player-input {
+    flex: 1; padding: 9px 14px; border-radius: 10px;
+    background: rgba(255,255,255,0.08); color: #fff;
+    font-size: 14px; outline: none; border: 1.5px solid #ffffff33;
+    transition: border-color .2s;
+  }
+  .player-input:focus { border-color: #64b5f6; }
+  .player-input::placeholder { color: rgba(255,255,255,0.3); }
+  .btn-start {
+    width: 100%; padding: 14px 0; border-radius: 13px; border: none;
+    background: linear-gradient(135deg, #2196f3, #1565c0);
+    color: #fff; font-size: 16px; font-weight: 700; cursor: pointer;
+    box-shadow: 0 4px 24px #2196f355; margin-top: 8px;
+    transition: transform .15s;
+  }
+  .btn-start:hover { transform: translateY(-2px); }
+
+  /* ── TRANSITION ── */
+  #transition-screen {
+    position: fixed; inset: 0; z-index: 200;
+    background: linear-gradient(160deg, #0a1628, #1a3a5c);
+    flex-direction: column; align-items: center; justify-content: center;
+    text-align: center;
+  }
+  .trans-avatar {
+    width: 80px; height: 80px; border-radius: 20px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 32px; font-weight: 800;
+    margin: 0 auto 20px; color: #fff;
+  }
+  .trans-round { font-size: 13px; color: rgba(255,255,255,0.45); margin-bottom: 6px; }
+  .trans-name { font-size: 28px; font-weight: 800; margin-bottom: 8px; }
+  .trans-sub { color: rgba(255,255,255,0.5); font-size: 14px; margin-bottom: 32px; }
+  .btn-ready {
+    padding: 14px 40px; border-radius: 13px; border: none;
+    color: #fff; font-size: 16px; font-weight: 700; cursor: pointer;
+  }
+
+  /* ── GAME ── */
+  #game-screen {
+    flex-direction: column; align-items: center;
+    min-height: 100vh; padding: 60px 12px 48px;
+  }
+  .game-header {
+    width: 100%; max-width: 720px;
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 12px;
+  }
+  .header-left { display: flex; align-items: center; gap: 10px; }
+  .cur-avatar {
+    width: 38px; height: 38px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; font-weight: 800; color: #fff;
+  }
+  .cur-name { font-weight: 700; font-size: 16px; line-height: 1; }
+  .cur-round { font-size: 12px; color: rgba(255,255,255,0.45); }
+  .header-right { display: flex; gap: 8px; align-items: center; }
+  .mini-player { text-align: center; transition: opacity 0.2s; }
+  .mini-player.inactive { opacity: 0.4; }
+  .mini-avatar {
+    width: 28px; height: 28px; border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; margin: 0 auto 2px; color: #fff;
+  }
+  .mini-score { font-size: 10px; color: rgba(255,255,255,0.6); }
+  .btn-scoreboard {
+    padding: 6px 10px; border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.08); color: #fff;
+    font-size: 11px; cursor: pointer;
+  }
+  .progress-bar-wrap {
+    width: 100%; max-width: 720px;
+    height: 5px; background: rgba(255,255,255,0.1);
+    border-radius: 3px; overflow: hidden; margin-bottom: 14px;
+  }
+  .progress-bar-fill {
+    height: 100%; border-radius: 3px; transition: width 0.5s;
+  }
+  .dice-area {
+    width: 100%; max-width: 720px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 20px; padding: 18px 14px; margin-bottom: 14px;
+  }
+  .dice-row {
+    display: flex; justify-content: center; gap: 8px;
+    flex-wrap: wrap; margin-bottom: 14px;
+  }
+  .die {
+    width: 64px; height: 64px; border-radius: 13px;
+    position: relative; flex-shrink: 0; cursor: pointer;
+    transition: all 0.15s; border: 2px solid #bbb;
+    background: linear-gradient(135deg, #fff, #e8e8e8);
+    box-shadow: 0 3px 10px #0003;
+  }
+  .die.held {
+    border-width: 3px;
+    transform: translateY(-4px) scale(1.06) !important;
+  }
+  .die.rolling { animation: shake 0.12s infinite; transform: scale(0.88); }
+  .die svg { position: absolute; inset: 0; pointer-events: none; }
+  .dice-controls {
+    display: flex; gap: 10px; justify-content: center;
+    align-items: center; flex-wrap: wrap;
+  }
+  .btn-roll {
+    padding: 11px 28px; border-radius: 11px; border: none;
+    color: #fff; font-size: 14px; font-weight: 700; cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-roll:disabled { background: rgba(255,255,255,0.1) !important; color: rgba(255,255,255,0.3); cursor: not-allowed; box-shadow: none !important; }
+  .dice-hint { font-size: 12px; color: rgba(255,255,255,0.35); }
+
+  .score-grid {
+    width: 100%; max-width: 720px;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+    margin-bottom: 12px;
+  }
+  .sec-box {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 16px; padding: 12px 10px;
+  }
+  .sec-title {
+    font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.35);
+    text-transform: uppercase; letter-spacing: 0.1em;
+    margin-bottom: 8px; padding: 0 2px;
+  }
+  .cat-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 6px 8px; border-radius: 8px; margin-bottom: 3px;
+    border: 1px solid transparent; cursor: default; transition: all 0.13s;
+  }
+  .cat-row.available { cursor: pointer; }
+  .cat-row.scored-zero { opacity: 0.35; }
+  .cat-label { font-size: 12px; color: rgba(255,255,255,0.85); user-select: none; }
+  .cat-score { font-size: 13px; font-weight: 700; min-width: 30px; text-align: right; }
+  .sub-row {
+    display: flex; justify-content: space-between;
+    padding: 8px 8px 6px; font-size: 12px;
+    color: rgba(255,255,255,0.5);
+    border-top: 1px solid rgba(255,255,255,0.07); margin-top: 4px;
+  }
+  .total-bar {
+    width: 100%; max-width: 720px;
+    border-radius: 14px; padding: 12px 18px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .total-label { font-size: 15px; font-weight: 700; }
+  .total-score { font-size: 26px; font-weight: 800; color: #ffd54f; }
+
+  /* ── SCOREBOARD MODAL ── */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.75);
+    z-index: 100; display: flex; align-items: center;
+    justify-content: center; padding: 16px;
+  }
+  .modal-box {
+    background: #0f2540; border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 20px; padding: 20px;
+    width: 100%; max-width: 600px; max-height: 85vh; overflow-y: auto;
+  }
+  .modal-box table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .modal-box th {
+    padding: 6px 8px; border-bottom: 1px solid rgba(255,255,255,0.15);
+    color: rgba(255,255,255,0.6); font-weight: 600;
+  }
+  .modal-box td {
+    padding: 5px 8px; border-bottom: 1px solid rgba(255,255,255,0.06);
+    color: rgba(255,255,255,0.8); text-align: center;
+  }
+  .modal-box td:first-child { text-align: left; }
+  .btn-close {
+    margin-top: 16px; width: 100%; padding: 10px 0; border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.08); color: #fff;
+    font-size: 13px; cursor: pointer;
+  }
+
+  /* ── RESULT ── */
+  #result-screen {
+    flex-direction: column; align-items: center; justify-content: center;
+    min-height: 100vh; padding: 24px 16px;
+  }
+  .result-trophy { font-size: 48px; margin-bottom: 8px; }
+  .result-h1 { font-size: 26px; font-weight: 800; margin-bottom: 4px; }
+  .result-sub { color: rgba(255,255,255,0.4); font-size: 13px; margin-bottom: 28px; }
+  .result-list { width: 100%; max-width: 400px; margin-bottom: 24px; }
+  .result-row {
+    display: flex; align-items: center; gap: 12px;
+    border-radius: 14px; padding: 14px 18px; margin-bottom: 10px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.05);
+  }
+  .result-medal { font-size: 24px; min-width: 32px; }
+  .result-avatar {
+    width: 36px; height: 36px; border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 800; color: #fff;
+  }
+  .result-info { flex: 1; }
+  .result-name { font-weight: 700; font-size: 15px; }
+  .result-detail { font-size: 11px; color: rgba(255,255,255,0.4); }
+  .result-pts { font-size: 20px; font-weight: 800; color: rgba(255,255,255,0.7); }
+  .result-pts.first { font-size: 26px; color: #ffd54f; }
+  .btn-home {
+    padding: 14px 40px; border-radius: 13px; border: none;
+    background: linear-gradient(135deg, #2196f3, #1565c0);
+    color: #fff; font-size: 16px; font-weight: 700; cursor: pointer;
+    box-shadow: 0 4px 24px #2196f355;
+  }
+
+  @keyframes shake {
+    0%,100% { transform: rotate(-8deg) scale(0.88); }
+    50%      { transform: rotate(8deg) scale(0.88); }
+  }
+</style>
+</head>
+<body>
+
+<!-- 뒤로가기 항상 표시 -->
+<div class="back-nav">
+  <button class="back-nav-btn" onclick="goHome()">← 게임 목록</button>
+</div>
+
+<!-- ══ SETUP SCREEN ══════════════════════════════════════════════════════════ -->
+<div id="setup-screen" class="screen active">
+  <div class="setup-card">
+    <div class="setup-title">🛥️</div>
+    <h1 class="setup-h1">YACHT</h1>
+    <p class="setup-sub">주사위 게임 · 로컬 멀티플레이</p>
+    <div class="setup-code" id="setup-code-display">----</div>
+    <div id="player-list"></div>
+    <button class="btn-start" id="btn-start">게임 시작 🎲</button>
+  </div>
+</div>
+
+<!-- ══ TURN TRANSITION ════════════════════════════════════════════════════════ -->
+<div id="transition-screen" class="screen">
+  <div class="trans-avatar" id="trans-avatar"></div>
+  <div class="trans-round" id="trans-round"></div>
+  <div class="trans-name" id="trans-name"></div>
+  <div class="trans-sub">기기를 넘겨주세요</div>
+  <button class="btn-ready" id="btn-ready">준비 완료 🎲</button>
+</div>
+
+<!-- ══ SCOREBOARD MODAL ════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="scoreboard-modal" style="display:none;">
+  <div class="modal-box">
+    <h3 style="margin:0 0 16px;font-size:16px;">📊 현재 점수판</h3>
+    <div style="overflow-x:auto;">
+      <table id="scoreboard-table"></table>
+    </div>
+    <button class="btn-close" id="btn-close-modal">닫기</button>
+  </div>
+</div>
+
+<!-- ══ GAME SCREEN ═══════════════════════════════════════════════════════════ -->
+<div id="game-screen" class="screen">
+  <div class="game-header">
+    <div class="header-left">
+      <div class="cur-avatar" id="cur-avatar"></div>
+      <div>
+        <div class="cur-name" id="cur-name"></div>
+        <div class="cur-round" id="cur-round"></div>
+      </div>
+    </div>
+    <div class="header-right" id="header-right">
+      <button class="btn-scoreboard" id="btn-open-scoreboard">점수판</button>
+    </div>
+  </div>
+
+  <div class="progress-bar-wrap">
+    <div class="progress-bar-fill" id="progress-fill"></div>
+  </div>
+
+  <div class="dice-area">
+    <div class="dice-row" id="dice-row"></div>
+    <div class="dice-controls">
+      <button class="btn-roll" id="btn-roll">🎲 굴리기 (3회 남음)</button>
+      <span class="dice-hint" id="dice-hint">굴려서 시작</span>
+    </div>
+  </div>
+
+  <div class="score-grid">
+    <div class="sec-box">
+      <div class="sec-title">상단</div>
+      <div id="upper-cats"></div>
+      <div class="sub-row">
+        <span>소계</span>
+        <span id="upper-total-display">0/63</span>
+      </div>
+      <div class="sub-row" id="bonus-row">
+        <span>보너스</span>
+        <span id="bonus-display">잔여: 63</span>
+      </div>
+    </div>
+    <div class="sec-box">
+      <div class="sec-title">하단</div>
+      <div id="lower-cats"></div>
+    </div>
+  </div>
+
+  <div class="total-bar" id="total-bar">
+    <span class="total-label" id="total-label"></span>
+    <span class="total-score" id="total-score">0점</span>
+  </div>
+</div>
+
+<!-- ══ RESULT SCREEN ══════════════════════════════════════════════════════════ -->
+<div id="result-screen" class="screen">
+  <div class="result-trophy">🏆</div>
+  <h1 class="result-h1">게임 종료!</h1>
+  <p class="result-sub">최종 결과</p>
+  <div class="result-list" id="result-list"></div>
+  <button class="btn-home" onclick="goHome()">게임 목록으로 🏠</button>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════════════════════
+//  CONSTANTS
+// ══════════════════════════════════════════════════════════════════════════════
+const CATEGORIES = [
+  { id:"ones",          label:"Ones",           sub:"1의 합",          section:"upper" },
+  { id:"twos",          label:"Twos",           sub:"2의 합",          section:"upper" },
+  { id:"threes",        label:"Threes",         sub:"3의 합",          section:"upper" },
+  { id:"fours",         label:"Fours",          sub:"4의 합",          section:"upper" },
+  { id:"fives",         label:"Fives",          sub:"5의 합",          section:"upper" },
+  { id:"sixes",         label:"Sixes",          sub:"6의 합",          section:"upper" },
+  { id:"fourOfKind",    label:"Four of a Kind", sub:"같은 수 4개의 합", section:"lower" },
+  { id:"fullHouse",     label:"Full House",     sub:"3+2 → 전체 합",   section:"lower" },
+  { id:"smallStraight", label:"Small Straight", sub:"연속 4개 → 15점", section:"lower" },
+  { id:"largeStraight", label:"Large Straight", sub:"연속 5개 → 30점", section:"lower" },
+  { id:"choice",        label:"Choice",         sub:"전체 합",         section:"lower" },
+  { id:"yacht",         label:"YACHT 🛥",       sub:"5개 동일 → 50점", section:"lower" },
+];
+const UPPER = CATEGORIES.filter(c => c.section === "upper");
+const LOWER = CATEGORIES.filter(c => c.section === "lower");
+const PLAYER_COLORS = [
+  "#2196f3","#f44336","#4caf50","#ff9800","#9c27b0",
+  "#00bcd4","#e91e63","#8bc34a"
+];
+const MEDALS = ["🥇","🥈","🥉","4️⃣","5️⃣","6️⃣","7️⃣","8️⃣"];
+const DOTS = {
+  1:[[50,50]],
+  2:[[28,28],[72,72]],
+  3:[[28,28],[50,50],[72,72]],
+  4:[[28,28],[72,28],[28,72],[72,72]],
+  5:[[28,28],[72,28],[50,50],[28,72],[72,72]],
+  6:[[28,22],[72,22],[28,50],[72,50],[28,78],[72,78]],
+};
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  URL PARAMS & SESSION
+// ══════════════════════════════════════════════════════════════════════════════
+const params      = new URLSearchParams(location.search);
+const ROOM_CODE   = (params.get('room') || 'XXXX').toUpperCase();
+const PLAYER_COUNT = Math.min(8, Math.max(2, parseInt(params.get('players') || '2')));
+const MY_NICK     = sessionStorage.getItem('pwf-nickname') || '플레이어 1';
+
+// 방 코드 표시
+document.getElementById('setup-code-display').textContent = ROOM_CODE;
+
+// 뒤로가기
+window.goHome = function() { window.location.href = '/'; };
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  SETUP — 플레이어 이름 입력
+// ══════════════════════════════════════════════════════════════════════════════
+let setupPlayers = [];
+for (let i = 0; i < PLAYER_COUNT; i++) {
+  setupPlayers.push({ name: i === 0 ? MY_NICK : `플레이어 ${i + 1}` });
+}
+
+function renderSetup() {
+  const list = document.getElementById('player-list');
+  list.innerHTML = '';
+  setupPlayers.forEach((p, i) => {
+    const row = document.createElement('div');
+    row.className = 'player-row';
+    row.innerHTML = `
+      <div class="player-num" style="background:${PLAYER_COLORS[i]}">${i + 1}</div>
+      <input class="player-input" maxlength="12"
+        style="border-color:${PLAYER_COLORS[i]}66"
+        value="${p.name}" data-idx="${i}"
+        placeholder="플레이어 ${i + 1} 이름" />
+    `;
+    list.appendChild(row);
+  });
+
+  list.querySelectorAll('input').forEach(inp => {
+    inp.addEventListener('input', e => {
+      setupPlayers[+e.target.dataset.idx].name = e.target.value;
+    });
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  GAME STATE
+// ══════════════════════════════════════════════════════════════════════════════
+let state = {
+  players: [],
+  scores: [],
+  curPlayer: 0,
+  round: 1,
+  totalRounds: 12,
+  dice: [1,1,1,1,1],
+  held: [false,false,false,false,false],
+  rollsLeft: 3,
+  rolling: false,
+  lastScored: null,
+};
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  SCORE ENGINE
+// ══════════════════════════════════════════════════════════════════════════════
+function calcScore(id, dice) {
+  const cnt = Array(7).fill(0);
+  dice.forEach(d => cnt[d]++);
+  const sum = dice.reduce((a,b) => a+b, 0);
+  const vals = cnt.slice(1).filter(c => c > 0).sort((a,b) => b-a);
+  switch (id) {
+    case "ones":   return cnt[1]*1;
+    case "twos":   return cnt[2]*2;
+    case "threes": return cnt[3]*3;
+    case "fours":  return cnt[4]*4;
+    case "fives":  return cnt[5]*5;
+    case "sixes":  return cnt[6]*6;
+    case "fourOfKind":
+      for (let i=1;i<=6;i++) if (cnt[i]>=4) return i*4;
+      return 0;
+    case "fullHouse":
+      if ((vals[0]===3 && vals[1]===2) || vals[0]===5) return sum;
+      return 0;
+    case "smallStraight": {
+      const u = [...new Set(dice)].sort((a,b)=>a-b).join("");
+      return (u.includes("1234")||u.includes("2345")||u.includes("3456")) ? 15 : 0;
+    }
+    case "largeStraight": {
+      const s = [...new Set(dice)].sort((a,b)=>a-b).join("");
+      return (s==="12345"||s==="23456") ? 30 : 0;
+    }
+    case "choice": return sum;
+    case "yacht":  return vals[0]===5 ? 50 : 0;
+    default: return 0;
+  }
+}
+
+function getTotal(scores) {
+  const upper = UPPER.reduce((s,c) => s+(scores[c.id]??0), 0);
+  const bonus  = upper >= 63 ? 35 : 0;
+  const lower  = LOWER.reduce((s,c) => s+(scores[c.id]??0), 0);
+  return { upper, bonus, lower, grand: upper+bonus+lower };
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  SCREEN HELPER
+// ══════════════════════════════════════════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  START GAME
+// ══════════════════════════════════════════════════════════════════════════════
+document.getElementById('btn-start').addEventListener('click', () => {
+  state.players = setupPlayers.map((p,i) => ({
+    name: p.name.trim() || `플레이어 ${i+1}`,
+    color: PLAYER_COLORS[i],
+  }));
+  state.scores = state.players.map(() => ({}));
+  state.curPlayer = 0;
+  state.round = 1;
+  state.dice = [1,1,1,1,1];
+  state.held = [false,false,false,false,false];
+  state.rollsLeft = 3;
+  state.rolling = false;
+  showTransition();
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  TRANSITION
+// ══════════════════════════════════════════════════════════════════════════════
+function showTransition() {
+  const p = state.players[state.curPlayer];
+  const av = document.getElementById('trans-avatar');
+  av.textContent = p.name[0].toUpperCase();
+  av.style.background = p.color;
+  av.style.boxShadow = `0 0 40px ${p.color}88`;
+  document.getElementById('trans-round').textContent =
+    `${state.round} / ${state.totalRounds} 라운드`;
+  document.getElementById('trans-name').textContent = `${p.name}의 차례`;
+  const btn = document.getElementById('btn-ready');
+  btn.style.background = p.color;
+  btn.style.boxShadow = `0 4px 24px ${p.color}66`;
+  showScreen('transition-screen');
+}
+
+document.getElementById('btn-ready').addEventListener('click', () => {
+  showScreen('game-screen');
+  renderGame();
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  DICE SVG
+// ══════════════════════════════════════════════════════════════════════════════
+function makeDieSVG(value, color, isHeld) {
+  const dots = DOTS[value] || [];
+  const fill = isHeld ? color : "#1a1a1a";
+  return `<svg width="64" height="64" viewBox="0 0 100 100">
+    ${dots.map(([cx,cy]) => `<circle cx="${cx}" cy="${cy}" r="9" fill="${fill}"/>`).join('')}
+  </svg>`;
+}
+
+function renderDice() {
+  const row = document.getElementById('dice-row');
+  row.innerHTML = '';
+  const p = state.players[state.curPlayer];
+  state.dice.forEach((val, i) => {
+    const div = document.createElement('div');
+    div.className = 'die' + (state.held[i]?' held':'') + (state.rolling&&!state.held[i]?' rolling':'');
+    div.style.background = state.held[i]
+      ? `linear-gradient(135deg,${p.color}22,${p.color}44)`
+      : 'linear-gradient(135deg,#fff,#e8e8e8)';
+    div.style.border = state.held[i]
+      ? `3px solid ${p.color}`
+      : '2px solid #bbb';
+    div.style.boxShadow = state.held[i]
+      ? `0 0 16px ${p.color}66, 0 3px 8px #0004`
+      : '0 3px 10px #0003';
+    div.innerHTML = makeDieSVG(val, p.color, state.held[i]);
+    div.addEventListener('click', () => toggleHold(i));
+    row.appendChild(div);
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  GAME RENDER
+// ══════════════════════════════════════════════════════════════════════════════
+function renderGame() {
+  const p = state.players[state.curPlayer];
+  const myScores = state.scores[state.curPlayer];
+  const hasRolled = state.rollsLeft < 3;
+
+  const av = document.getElementById('cur-avatar');
+  av.textContent = p.name[0].toUpperCase();
+  av.style.background = p.color;
+  av.style.boxShadow = `0 0 16px ${p.color}88`;
+  document.getElementById('cur-name').textContent = p.name;
+  document.getElementById('cur-round').textContent =
+    `라운드 ${state.round}/${state.totalRounds}`;
+
+  const hr = document.getElementById('header-right');
+  hr.querySelectorAll('.mini-player').forEach(el => el.remove());
+  const sbBtn = document.getElementById('btn-open-scoreboard');
+  state.players.forEach((pl, i) => {
+    const tot = getTotal(state.scores[i]).grand;
+    const div = document.createElement('div');
+    div.className = 'mini-player' + (i===state.curPlayer?'':' inactive');
+    div.innerHTML = `
+      <div class="mini-avatar" style="background:${pl.color};
+        ${i===state.curPlayer?'border:2px solid #fff;':''}">${pl.name[0].toUpperCase()}</div>
+      <div class="mini-score">${tot}</div>
+    `;
+    hr.insertBefore(div, sbBtn);
+  });
+
+  const progress = ((state.round-1)*state.players.length + state.curPlayer)
+    / (state.totalRounds * state.players.length) * 100;
+  const fill = document.getElementById('progress-fill');
+  fill.style.width = progress + '%';
+  fill.style.background = `linear-gradient(90deg,${p.color},${p.color}aa)`;
+
+  renderDice();
+
+  const rollBtn = document.getElementById('btn-roll');
+  rollBtn.style.background = state.rollsLeft>0&&!state.rolling
+    ? `linear-gradient(135deg,${p.color},${p.color}bb)` : '';
+  rollBtn.style.boxShadow = state.rollsLeft>0&&!state.rolling
+    ? `0 4px 20px ${p.color}55` : 'none';
+  rollBtn.disabled = state.rollsLeft<=0 || state.rolling;
+  rollBtn.textContent = state.rolling ? '굴리는 중...'
+    : state.rollsLeft>0 ? `🎲 굴리기 (${state.rollsLeft}회 남음)` : '굴리기 완료';
+  document.getElementById('dice-hint').textContent =
+    hasRolled ? '주사위 클릭 = 고정/해제' : '굴려서 시작';
+
+  renderCats(myScores, hasRolled, p.color);
+
+  const { upper, bonus, lower, grand } = getTotal(myScores);
+  const utd = document.getElementById('upper-total-display');
+  utd.textContent = `${upper}/63`;
+  utd.style.color = upper>=63 ? '#4caf50' : '#fff';
+  utd.style.fontWeight = '700';
+  const bd = document.getElementById('bonus-display');
+  const br = document.getElementById('bonus-row');
+  if (bonus > 0) {
+    bd.textContent = '+35';
+    br.style.color = '#4caf50';
+  } else {
+    bd.textContent = `잔여: ${63-upper}`;
+    br.style.color = 'rgba(255,255,255,0.35)';
+  }
+
+  const tb = document.getElementById('total-bar');
+  tb.style.background = `linear-gradient(135deg,${p.color}18,${p.color}08)`;
+  tb.style.border = `1px solid ${p.color}44`;
+  document.getElementById('total-label').textContent = `${p.name} 현재 점수`;
+  document.getElementById('total-score').textContent = `${grand}점`;
+}
+
+function renderCats(myScores, hasRolled, color) {
+  renderSection('upper-cats', UPPER, myScores, hasRolled, color);
+  renderSection('lower-cats', LOWER, myScores, hasRolled, color);
+}
+
+function renderSection(containerId, cats, myScores, hasRolled, color) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = '';
+  cats.forEach(cat => {
+    const scored = myScores[cat.id] !== undefined;
+    const preview = hasRolled && !scored ? calcScore(cat.id, state.dice) : null;
+    const row = document.createElement('div');
+    row.className = 'cat-row'
+      + (!scored && hasRolled ? ' available' : '')
+      + (scored && myScores[cat.id]===0 ? ' scored-zero' : '');
+
+    if (state.lastScored === cat.id) {
+      row.style.background = 'rgba(76,175,80,0.25)';
+      row.style.border = '1px solid rgba(76,175,80,0.5)';
+    }
+
+    if (!scored && hasRolled) {
+      row.addEventListener('mouseenter', () => {
+        row.style.background = `${color}22`;
+        row.style.border = `1px solid ${color}66`;
+      });
+      row.addEventListener('mouseleave', () => {
+        row.style.background = '';
+        row.style.border = '1px solid transparent';
+      });
+      row.addEventListener('click', () => selectCategory(cat.id));
+    }
+
+    let scoreText, scoreColor;
+    if (scored) {
+      scoreText = myScores[cat.id];
+      scoreColor = myScores[cat.id]===0 ? 'rgba(255,255,255,0.2)' : '#fff';
+    } else if (preview !== null) {
+      scoreText = `+${preview}`;
+      scoreColor = preview>0 ? color : 'rgba(255,255,255,0.25)';
+    } else {
+      scoreText = '—';
+      scoreColor = 'rgba(255,255,255,0.15)';
+    }
+
+    row.innerHTML = `
+      <div class="cat-label">${cat.label}</div>
+      <span class="cat-score" style="color:${scoreColor}">${scoreText}</span>
+    `;
+    container.appendChild(row);
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  GAME LOGIC
+// ══════════════════════════════════════════════════════════════════════════════
+let rollInterval = null;
+
+document.getElementById('btn-roll').addEventListener('click', () => {
+  if (state.rollsLeft<=0 || state.rolling) return;
+  state.rolling = true;
+  renderGame();
+  let ticks = 0;
+  rollInterval = setInterval(() => {
+    state.dice = state.dice.map((d,i) =>
+      state.held[i] ? d : Math.ceil(Math.random()*6)
+    );
+    renderDice();
+    if (++ticks >= 8) {
+      clearInterval(rollInterval);
+      state.rolling = false;
+      state.rollsLeft--;
+      renderGame();
+    }
+  }, 55);
+});
+
+function toggleHold(i) {
+  if (state.rollsLeft>=3 || state.rolling) return;
+  state.held[i] = !state.held[i];
+  renderDice();
+}
+
+function selectCategory(catId) {
+  const myScores = state.scores[state.curPlayer];
+  if (myScores[catId]!==undefined || state.rollsLeft>=3 || state.rolling) return;
+  const pts = calcScore(catId, state.dice);
+  myScores[catId] = pts;
+  state.lastScored = catId;
+  renderGame();
+
+  const nextPlayer = (state.curPlayer+1) % state.players.length;
+  const nextRound = nextPlayer===0 ? state.round+1 : state.round;
+
+  setTimeout(() => {
+    state.lastScored = null;
+    if (nextRound > state.totalRounds) {
+      showResult();
+      return;
+    }
+    state.curPlayer = nextPlayer;
+    state.round = nextRound;
+    state.dice = [1,1,1,1,1];
+    state.held = [false,false,false,false,false];
+    state.rollsLeft = 3;
+    state.rolling = false;
+    showTransition();
+  }, 600);
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  SCOREBOARD MODAL
+// ══════════════════════════════════════════════════════════════════════════════
+document.getElementById('btn-open-scoreboard').addEventListener('click', () => {
+  const modal = document.getElementById('scoreboard-modal');
+  const table = document.getElementById('scoreboard-table');
+  const players = state.players;
+  const scores = state.scores;
+
+  let html = `<thead><tr><th style="text-align:left">족보</th>
+    ${players.map((p)=>`<th style="color:${p.color}">${p.name}</th>`).join('')}
+  </tr></thead><tbody>`;
+
+  CATEGORIES.forEach(cat => {
+    html += `<tr><td>${cat.label}</td>`;
+    scores.forEach(s => {
+      const v = s[cat.id];
+      const clr = v===undefined ? 'rgba(255,255,255,0.2)'
+        : v===0 ? 'rgba(255,255,255,0.25)' : '#fff';
+      html += `<td style="color:${clr};font-weight:${v>0?700:400}">
+        ${v!==undefined?v:'—'}
+      </td>`;
+    });
+    html += '</tr>';
+  });
+
+  html += `<tr style="border-top:2px solid rgba(255,255,255,0.2)">
+    <td style="font-weight:700;color:#ffd54f">합계</td>
+    ${scores.map((s,i)=>`<td style="font-weight:800;color:${players[i].color}">
+      ${getTotal(s).grand}
+    </td>`).join('')}
+  </tr></tbody>`;
+
+  table.innerHTML = html;
+  modal.style.display = 'flex';
+});
+
+document.getElementById('btn-close-modal').addEventListener('click', () => {
+  document.getElementById('scoreboard-modal').style.display = 'none';
+});
+document.getElementById('scoreboard-modal').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget)
+    document.getElementById('scoreboard-modal').style.display = 'none';
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  RESULT
+// ══════════════════════════════════════════════════════════════════════════════
+function showResult() {
+  const totals = state.scores.map((s,i) => ({
+    name: state.players[i].name,
+    color: state.players[i].color,
+    ...getTotal(s),
+  })).sort((a,b) => b.grand - a.grand);
+
+  const list = document.getElementById('result-list');
+  list.innerHTML = totals.map((p,i) => `
+    <div class="result-row ${i===0?'first':''}"
+      style="${i===0
+        ? `background:linear-gradient(135deg,${p.color}22,${p.color}08);border:1px solid ${p.color}55;`
+        : ''}">
+      <div class="result-medal">${MEDALS[i]}</div>
+      <div class="result-avatar" style="background:${p.color}">
+        ${p.name[0].toUpperCase()}
+      </div>
+      <div class="result-info">
+        <div class="result-name">${p.name}</div>
+        <div class="result-detail">
+          상단 ${p.upper}${p.bonus>0?` +${p.bonus}보너스`:''} · 하단 ${p.lower}
+        </div>
+      </div>
+      <div class="result-pts ${i===0?'first':''}">${p.grand}</div>
+    </div>
+  `).join('');
+
+  showScreen('result-screen');
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════════════════════════════════════
+renderSetup();
+</script>
+</body>
+</html>

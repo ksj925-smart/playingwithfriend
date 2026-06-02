@@ -13,6 +13,10 @@
         "destination": "/games/quoriko/index.html"
       },
       {
+        "source": "/games/yacht/**",
+        "destination": "/games/yacht/index.html"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }

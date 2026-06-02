@@ -21,7 +21,7 @@ initFirebase();
 // ── 게임 데이터 ──
 const GAMES = [
   { id: 'quoriko',       name: '쿼리도',       players: [2, 4],        tag: '전략',  active: true  },
-  { id: 'yacht',         name: '요트 주사위',   players: [2,3,4,5,6],   tag: '주사위', active: true  },
+  { id: 'yacht',         name: '요트 주사위',   players: [2,3,4,5,6,7,8], tag: '주사위', active: true  },
   { id: 'mahe',          name: '마헤',          players: [2,3,4,5],     tag: '레이싱', active: true  },
   { id: 'winners-circle',name: '위너스 서클',   players: [2,3,4,5,6],   tag: '베팅',  active: false },
   { id: 'splendor',      name: '스플랜더',      players: [2,3,4],       tag: '보석',  active: false },
@@ -224,6 +224,7 @@ window.showLobby = showLobby;
 // ── 게임별 이동 경로 ──
 const GAME_PATHS = {
   quoriko: '/games/quoriko/',
+  yacht:   '/games/yacht/',
 };
 
 // ── 방 만들기 ──
